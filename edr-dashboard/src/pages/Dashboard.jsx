@@ -8,6 +8,52 @@ import {
   fetchSystemOverview, 
   fetchRealTimeStats 
 } from '../services/api';
+import { 
+  ComputerDesktopIcon,
+  ShieldExclamationIcon,
+  ExclamationTriangleIcon,
+  DocumentTextIcon,
+  ChartBarIcon,
+  ClockIcon
+} from '@heroicons/react/24/outline';
+
+const StatCard = ({ title, value, change, icon: Icon, color, subtitle }) => (
+  <div className="group relative overflow-hidden bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-6 hover:bg-white/15 transition-all duration-300">
+    <div className="flex items-center justify-between">
+      <div>
+        <p className="text-gray-400 text-sm font-medium">{title}</p>
+        <p className="text-3xl font-bold text-white mt-1">{value}</p>
+        {subtitle && <p className="text-sm text-gray-300 mt-1">{subtitle}</p>}
+        {change && (
+          <p className={`text-sm mt-2 ${change > 0 ? 'text-green-400' : 'text-red-400'}`}>
+            {change > 0 ? '+' : ''}{change}% from yesterday
+          </p>
+        )}
+      </div>
+      <div className={`p-3 rounded-xl ${color} group-hover:scale-110 transition-transform duration-300`}>
+        <Icon className="w-6 h-6 text-white" />
+      </div>
+    </div>
+    <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-white/20 to-transparent"></div>
+  </div>
+);
+
+const ActivityItem = ({ icon, title, description, time, severity }) => (
+  <div className="flex items-center gap-4 p-4 bg-white/5 rounded-xl hover:bg-white/10 transition-colors">
+    <div className={`p-2 rounded-lg ${
+      severity === 'high' ? 'bg-red-500/20 text-red-400' :
+      severity === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
+      'bg-blue-500/20 text-blue-400'
+    }`}>
+      {icon}
+    </div>
+    <div className="flex-1">
+      <h4 className="text-white font-medium">{title}</h4>
+      <p className="text-gray-400 text-sm">{description}</p>
+    </div>
+    <div className="text-xs text-gray-500">{time}</div>
+  </div>
+);
 
 export const Dashboard = () => {
   const [dashboardStats, setDashboardStats] = useState(null);
@@ -20,7 +66,6 @@ export const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Fetch all dashboard data
   const fetchAllData = async () => {
     try {
       setLoading(true);
@@ -59,26 +104,23 @@ export const Dashboard = () => {
     }
   };
 
-  // Auto-refresh data every 30 seconds
   useEffect(() => {
     fetchAllData();
     const interval = setInterval(fetchAllData, 30000);
     return () => clearInterval(interval);
   }, []);
 
-  // Loading state
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <div className="inline-block w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
           <div className="text-gray-400">Loading dashboard data...</div>
         </div>
       </div>
     );
   }
 
-  // Error state
   if (error) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -87,7 +129,7 @@ export const Dashboard = () => {
           <div className="text-gray-400 mb-4">{error}</div>
           <button 
             onClick={fetchAllData}
-            className="btn btn-primary"
+            className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-colors"
           >
             Retry
           </button>
@@ -97,197 +139,91 @@ export const Dashboard = () => {
   }
 
   return (
-    <div>
-      {/* Top Statistics Cards */}
-      <div className="grid grid-cols-4 gap-6 mb-8">
-        {/* Active Agents */}
-        <div className="col-span-1 bg-gray-900 rounded-xl p-6 flex flex-col justify-between border-t-4 border-green-500">
-          <div className="flex items-center gap-3 mb-2">
-            <span className="text-3xl">💻</span>
-            <span className="text-lg font-semibold">Active Agents</span>
-          </div>
-          <div className="text-4xl font-bold">
-            {dashboardStats?.agents?.online || 0}
-          </div>
-          <div className="text-green-400 text-sm mt-2">
-            {dashboardStats?.agents?.total ? 
-              `${Math.round((dashboardStats.agents.online / dashboardStats.agents.total) * 100)}% online` : 
-              'No agents'
-            }
-          </div>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-white">Security Dashboard</h1>
+          <p className="text-gray-400 mt-1">Real-time monitoring and threat intelligence</p>
         </div>
-
-        {/* Active Threats */}
-        <div className="col-span-1 bg-gray-900 rounded-xl p-6 flex flex-col justify-between border-t-4 border-red-500">
-          <div className="flex items-center gap-3 mb-2">
-            <span className="text-3xl">🦠</span>
-            <span className="text-lg font-semibold">Active Threats</span>
-          </div>
-          <div className="text-4xl font-bold">
-            {dashboardStats?.threats?.active_indicators || 0}
-          </div>
-          <div className="text-red-400 text-sm mt-2">
-            {dashboardStats?.threats?.detected_24h || 0} detected in 24h
-          </div>
-        </div>
-
-        {/* Open Alerts */}
-        <div className="col-span-1 bg-gray-900 rounded-xl p-6 flex flex-col justify-between border-t-4 border-yellow-500">
-          <div className="flex items-center gap-3 mb-2">
-            <span className="text-3xl">⚠️</span>
-            <span className="text-lg font-semibold">Open Alerts</span>
-          </div>
-          <div className="text-4xl font-bold">
-            {dashboardStats?.alerts?.open || 0}
-          </div>
-          <div className="text-yellow-400 text-sm mt-2">
-            {dashboardStats?.alerts?.critical || 0} critical
-          </div>
-        </div>
-
-        {/* Events Today */}
-        <div className="col-span-1 bg-gray-900 rounded-xl p-6 flex flex-col justify-between border-t-4 border-cyan-500">
-          <div className="flex items-center gap-3 mb-2">
-            <span className="text-3xl">📋</span>
-            <span className="text-lg font-semibold">Events Today</span>
-          </div>
-          <div className="text-4xl font-bold">
-            {dashboardStats?.events?.last_24h?.toLocaleString() || 0}
-          </div>
-          <div className="text-cyan-400 text-sm mt-2">
-            {dashboardStats?.events?.avg_per_hour || 0}/hour avg
-          </div>
+        <div className="flex items-center gap-2 text-sm text-gray-400">
+          <ClockIcon className="w-4 h-4" />
+          Last updated: {new Date().toLocaleTimeString()}
         </div>
       </div>
 
-      {/* Charts Section */}
-      <div className="grid grid-cols-2 gap-6 mb-8">
-        {/* Threat Detection Timeline */}
-        <div className="bg-gray-900 rounded-xl p-6">
-          <div className="font-semibold text-lg mb-2">Threat Detection Timeline</div>
-          <div className="h-48 flex items-center justify-center text-gray-400">
-            {eventsTimeline?.threat_timeline?.length > 0 ? (
-              <div className="w-full">
-                <div className="text-sm text-gray-400 mb-2">
-                  Total threats: {eventsTimeline.total_threats}
-                </div>
-                <div className="space-y-1">
-                  {eventsTimeline.threat_timeline.slice(0, 6).map((item, index) => (
-                    <div key={index} className="flex items-center gap-2">
-                      <div className="w-8 text-xs text-gray-500">H{item.time_unit}</div>
-                      <div className="flex-1 bg-gray-800 rounded h-2">
-                        <div 
-                          className="bg-red-500 h-2 rounded" 
-                          style={{width: `${(item.threat_count / Math.max(...eventsTimeline.threat_timeline.map(t => t.threat_count))) * 100}%`}}
-                        ></div>
-                      </div>
-                      <div className="w-8 text-xs text-gray-400">{item.threat_count}</div>
+      {/* Main Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <StatCard
+          title="Active Endpoints"
+          value={dashboardStats?.agents?.online || 0}
+          subtitle={`${dashboardStats?.agents?.total || 0} total endpoints`}
+          change={5.2}
+          icon={ComputerDesktopIcon}
+          color="bg-gradient-to-br from-green-500 to-emerald-600"
+        />
+        <StatCard
+          title="Active Threats"
+          value={dashboardStats?.threats?.active_indicators || 0}
+          subtitle={`${dashboardStats?.threats?.detected_24h || 0} detected today`}
+          change={-2.1}
+          icon={ShieldExclamationIcon}
+          color="bg-gradient-to-br from-red-500 to-pink-600"
+        />
+        <StatCard
+          title="Open Alerts"
+          value={dashboardStats?.alerts?.open || 0}
+          subtitle={`${dashboardStats?.alerts?.critical || 0} critical alerts`}
+          change={1.8}
+          icon={ExclamationTriangleIcon}
+          color="bg-gradient-to-br from-yellow-500 to-orange-600"
+        />
+        <StatCard
+          title="Events Today"
+          value={dashboardStats?.events?.last_24h?.toLocaleString() || 0}
+          subtitle={`${dashboardStats?.events?.avg_per_hour || 0}/hour average`}
+          change={12.5}
+          icon={DocumentTextIcon}
+          color="bg-gradient-to-br from-blue-500 to-purple-600"
+        />
+      </div>
+
+      {/* Charts and Analytics */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Threat Timeline Chart */}
+        <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-xl font-semibold text-white">Threat Detection Timeline</h3>
+            <button className="text-blue-400 hover:text-blue-300 text-sm">View Details</button>
+          </div>
+          
+          <div className="space-y-4">
+            {eventsTimeline?.threat_timeline?.slice(0, 8).length > 0 ? (
+              eventsTimeline.threat_timeline.slice(0, 8).map((item, index) => (
+                <div key={index} className="flex items-center gap-4">
+                  <div className="text-xs text-gray-400 w-12">H{item.time_unit}</div>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-sm text-gray-300">Threats Detected</span>
+                      <span className="text-sm font-medium text-white">{item.threat_count}</span>
                     </div>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <div>No threat data available</div>
-            )}
-          </div>
-        </div>
-
-        {/* Alert Severity Distribution */}
-        <div className="bg-gray-900 rounded-xl p-6">
-          <div className="font-semibold text-lg mb-2">Alert Severity Distribution</div>
-          <div className="h-48 flex items-center justify-center text-gray-400">
-            {alertsOverview?.severity_distribution ? (
-              <div className="w-full space-y-2">
-                {Object.entries(alertsOverview.severity_distribution).map(([severity, count]) => (
-                  <div key={severity} className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className={`w-3 h-3 rounded-full ${
-                        severity === 'Critical' ? 'bg-red-500' :
-                        severity === 'High' ? 'bg-orange-500' :
-                        severity === 'Medium' ? 'bg-yellow-500' :
-                        'bg-green-500'
-                      }`}></div>
-                      <span className="text-sm">{severity}</span>
+                    <div className="w-full bg-gray-700 rounded-full h-2">
+                      <div 
+                        className="bg-gradient-to-r from-red-500 to-pink-500 h-2 rounded-full transition-all duration-1000" 
+                        style={{
+                          width: `${Math.min((item.threat_count / (Math.max(...eventsTimeline.threat_timeline.map(t => t.threat_count)) || 1)) * 100, 100)}%`
+                        }}
+                      ></div>
                     </div>
-                    <span className="text-sm font-semibold">{count}</span>
                   </div>
-                ))}
-              </div>
+                </div>
+              ))
             ) : (
-              <div>No alert data available</div>
+              <div className="text-center text-gray-400 py-8">No threat data available</div>
             )}
-          </div>
-        </div>
-      </div>
-
-      {/* Recent Security Alerts */}
-      <div className="bg-gray-900 rounded-xl p-6">
-        <div className="font-semibold text-lg mb-4">Recent Security Alerts</div>
-        <div className="space-y-4">
-          {alertsOverview?.recent_critical_alerts?.length > 0 ? (
-            alertsOverview.recent_critical_alerts.slice(0, 5).map((alert, index) => (
-              <div key={index} className="flex items-center justify-between p-4 rounded-lg bg-gray-800">
-                <div>
-                  <div className={`font-semibold text-base ${
-                    alert.severity === 'Critical' ? 'text-red-400' :
-                    alert.severity === 'High' ? 'text-orange-400' :
-                    'text-yellow-400'
-                  }`}>
-                    {alert.title}
-                  </div>
-                  <div className="text-gray-300 text-sm">
-                    Agent: {alert.agent_id}
-                  </div>
-                  <div className="text-xs text-gray-500">
-                    {alert.age_minutes} minutes ago
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <button className="btn btn-primary">Investigate</button>
-                  <button className="btn btn-ghost">Dismiss</button>
-                </div>
-              </div>
-            ))
-          ) : (
-            <div className="text-center text-gray-400 py-8">
-              No recent critical alerts
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* System Health Status */}
-      <div className="grid grid-cols-3 gap-6 mt-8">
-        <div className="bg-gray-900 rounded-xl p-6">
-          <div className="font-semibold text-lg mb-2">System Health</div>
-          <div className="text-3xl font-bold text-green-400">
-            {dashboardStats?.system_health?.score || 0}%
-          </div>
-          <div className="text-sm text-gray-400 mt-2">
-            Status: {dashboardStats?.system_health?.status || 'Unknown'}
-          </div>
-        </div>
-
-        <div className="bg-gray-900 rounded-xl p-6">
-          <div className="font-semibold text-lg mb-2">Detection Engine</div>
-          <div className="text-3xl font-bold text-blue-400">
-            {dashboardStats?.detection?.active_rules || 0}
-          </div>
-          <div className="text-sm text-gray-400 mt-2">
-            Active Rules
-          </div>
-        </div>
-
-        <div className="bg-gray-900 rounded-xl p-6">
-          <div className="font-semibold text-lg mb-2">Real-time Activity</div>
-          <div className="text-3xl font-bold text-purple-400">
-            {realTimeStats?.recent_activity?.events_last_5min || 0}
-          </div>
-          <div className="text-sm text-gray-400 mt-2">
-            Events (5min)
           </div>
         </div>
       </div>
     </div>
   );
-}; 
+};

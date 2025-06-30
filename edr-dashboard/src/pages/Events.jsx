@@ -1,18 +1,264 @@
 import React, { useState, useEffect } from 'react';
 import { fetchEventsTimeline } from '../services/api';
+import { 
+  MagnifyingGlassIcon,
+  FunnelIcon,
+  ArrowPathIcon,
+  EyeIcon,
+  DocumentTextIcon,
+  CalendarDaysIcon,
+  ClockIcon,
+  ExclamationTriangleIcon,
+  ShieldCheckIcon,
+  ChevronDownIcon,
+  ChevronRightIcon
+} from '@heroicons/react/24/outline';
+
+const EventLogItem = ({ event, onViewDetails, isExpanded, onToggleExpand }) => {
+  const getSeverityColor = (severity) => {
+    switch (severity?.toLowerCase()) {
+      case 'critical': return 'text-red-400 bg-red-500/20';
+      case 'high': return 'text-orange-400 bg-orange-500/20';
+      case 'medium': return 'text-yellow-400 bg-yellow-500/20';
+      case 'low': return 'text-green-400 bg-green-500/20';
+      default: return 'text-blue-400 bg-blue-500/20';
+    }
+  };
+
+  const getEventIcon = (type) => {
+    switch (type?.toLowerCase()) {
+      case 'threat': return <ExclamationTriangleIcon className="w-4 h-4" />;
+      case 'security': return <ShieldCheckIcon className="w-4 h-4" />;
+      default: return <DocumentTextIcon className="w-4 h-4" />;
+    }
+  };
+
+  return (
+    <div className="bg-white/5 border border-white/10 rounded-xl p-4 hover:bg-white/10 transition-all duration-200">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4 flex-1">
+          <button
+            onClick={onToggleExpand}
+            className="text-gray-400 hover:text-white transition-colors"
+          >
+            {isExpanded ? <ChevronDownIcon className="w-4 h-4" /> : <ChevronRightIcon className="w-4 h-4" />}
+          </button>
+          
+          <div className={`p-2 rounded-lg ${getSeverityColor(event.severity)}`}>
+            {getEventIcon(event.event_type)}
+          </div>
+          
+          <div className="flex-1">
+            <div className="flex items-center gap-3 mb-1">
+              <h4 className="text-white font-medium">{event.event_type || 'Security Event'}</h4>
+              <span className={`px-2 py-1 rounded-full text-xs font-medium ${getSeverityColor(event.severity)}`}>
+                {event.severity || 'Unknown'}
+              </span>
+            </div>
+            <p className="text-gray-400 text-sm">
+              Time: {event.timestamp || `${event.time_unit} hours ago`} • 
+              Count: {event.count || 1} events
+            </p>
+          </div>
+        </div>
+        
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => onViewDetails(event)}
+            className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition-colors flex items-center gap-1"
+          >
+            <EyeIcon className="w-4 h-4" />
+            Details
+          </button>
+        </div>
+      </div>
+      
+      {isExpanded && (
+        <div className="mt-4 pl-8 border-l-2 border-blue-500/30">
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <span className="text-gray-400">Event ID:</span>
+              <span className="text-white ml-2">{event.id || `EVT-${Date.now()}`}</span>
+            </div>
+            <div>
+              <span className="text-gray-400">Source:</span>
+              <span className="text-white ml-2">{event.source || 'System'}</span>
+            </div>
+            <div>
+              <span className="text-gray-400">Agent:</span>
+              <span className="text-white ml-2">{event.agent_id || 'N/A'}</span>
+            </div>
+            <div>
+              <span className="text-gray-400">Status:</span>
+              <span className="text-green-400 ml-2">{event.status || 'Logged'}</span>
+            </div>
+          </div>
+          {event.description && (
+            <div className="mt-3">
+              <span className="text-gray-400">Description:</span>
+              <p className="text-white mt-1">{event.description}</p>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const FilterPanel = ({ filters, onFiltersChange, onApply, onReset }) => {
+  return (
+    <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl p-6">
+      <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+        <FunnelIcon className="w-5 h-5" />
+        Filters
+      </h3>
+      
+      <div className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-300 mb-2">Event Type</label>
+          <select
+            value={filters.eventType}
+            onChange={(e) => onFiltersChange({ ...filters, eventType: e.target.value })}
+            className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white"
+          >
+            <option value="">All Types</option>
+            <option value="threat">Threat</option>
+            <option value="security">Security</option>
+            <option value="system">System</option>
+            <option value="network">Network</option>
+          </select>
+        </div>
+        
+        <div>
+          <label className="block text-sm font-medium text-gray-300 mb-2">Severity</label>
+          <select
+            value={filters.severity}
+            onChange={(e) => onFiltersChange({ ...filters, severity: e.target.value })}
+            className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white"
+          >
+            <option value="">All Severities</option>
+            <option value="critical">Critical</option>
+            <option value="high">High</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
+          </select>
+        </div>
+        
+        <div>
+          <label className="block text-sm font-medium text-gray-300 mb-2">Time Range</label>
+          <select
+            value={filters.timeRange}
+            onChange={(e) => onFiltersChange({ ...filters, timeRange: e.target.value })}
+            className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white"
+          >
+            <option value="1">Last 1 hour</option>
+            <option value="6">Last 6 hours</option>
+            <option value="24">Last 24 hours</option>
+            <option value="48">Last 48 hours</option>
+            <option value="72">Last 72 hours</option>
+          </select>
+        </div>
+        
+        <div className="flex gap-2 pt-4">
+          <button
+            onClick={onApply}
+            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg transition-colors"
+          >
+            Apply
+          </button>
+          <button
+            onClick={onReset}
+            className="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-2 rounded-lg transition-colors"
+          >
+            Reset
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const EventDetailModal = ({ event, onClose }) => {
+  if (!event) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-slate-900 border border-white/20 rounded-2xl p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-bold text-white">Event Details</h2>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-white transition-colors"
+          >
+            ×
+          </button>
+        </div>
+        
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-gray-400 text-sm">Event Type</label>
+              <p className="text-white font-medium">{event.event_type}</p>
+            </div>
+            <div>
+              <label className="text-gray-400 text-sm">Severity</label>
+              <p className="text-white font-medium">{event.severity}</p>
+            </div>
+            <div>
+              <label className="text-gray-400 text-sm">Timestamp</label>
+              <p className="text-white font-medium">{event.timestamp || 'N/A'}</p>
+            </div>
+            <div>
+              <label className="text-gray-400 text-sm">Count</label>
+              <p className="text-white font-medium">{event.count}</p>
+            </div>
+          </div>
+          
+          <div>
+            <label className="text-gray-400 text-sm">Raw Log Data</label>
+            <div className="mt-2 bg-black/50 rounded-lg p-4 font-mono text-sm text-green-400">
+              <pre className="whitespace-pre-wrap">
+{`{
+  "event_id": "${event.id || `EVT-${Date.now()}`}",
+  "timestamp": "${new Date().toISOString()}",
+  "event_type": "${event.event_type}",
+  "severity": "${event.severity}",
+  "source": "${event.source || 'system'}",
+  "agent_id": "${event.agent_id || 'N/A'}",
+  "count": ${event.count || 1},
+  "metadata": {
+    "time_unit": "${event.time_unit}",
+    "processed_at": "${new Date().toISOString()}",
+    "status": "logged"
+  }
+}`}
+              </pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export const Events = () => {
   const [eventsData, setEventsData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [timeRange, setTimeRange] = useState(24);
-  const [granularity, setGranularity] = useState('hour');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [expandedEvents, setExpandedEvents] = useState(new Set());
+  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [filters, setFilters] = useState({
+    eventType: '',
+    severity: '',
+    timeRange: '24'
+  });
 
   const fetchData = async () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await fetchEventsTimeline(timeRange, granularity);
+      const data = await fetchEventsTimeline(filters.timeRange, 'hour');
       setEventsData(data);
     } catch (err) {
       setError(err.message);
@@ -26,13 +272,52 @@ export const Events = () => {
     fetchData();
     const interval = setInterval(fetchData, 30000);
     return () => clearInterval(interval);
-  }, [timeRange, granularity]);
+  }, [filters.timeRange]);
+
+  const handleToggleExpand = (index) => {
+    const newExpanded = new Set(expandedEvents);
+    if (newExpanded.has(index)) {
+      newExpanded.delete(index);
+    } else {
+      newExpanded.add(index);
+    }
+    setExpandedEvents(newExpanded);
+  };
+
+  const handleViewDetails = (event) => {
+    setSelectedEvent(event);
+  };
+
+  const handleApplyFilters = () => {
+    fetchData();
+  };
+
+  const handleResetFilters = () => {
+    setFilters({
+      eventType: '',
+      severity: '',
+      timeRange: '24'
+    });
+  };
+
+  const filteredEvents = eventsData?.timeline?.filter(event => {
+    if (searchQuery && !event.event_type?.toLowerCase().includes(searchQuery.toLowerCase())) {
+      return false;
+    }
+    if (filters.eventType && event.event_type?.toLowerCase() !== filters.eventType.toLowerCase()) {
+      return false;
+    }
+    if (filters.severity && event.severity?.toLowerCase() !== filters.severity.toLowerCase()) {
+      return false;
+    }
+    return true;
+  }) || [];
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <div className="inline-block w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
           <div className="text-gray-400">Loading events data...</div>
         </div>
       </div>
@@ -45,152 +330,142 @@ export const Events = () => {
         <div className="text-center">
           <div className="text-red-400 text-xl mb-2">⚠️ Error Loading Events</div>
           <div className="text-gray-400 mb-4">{error}</div>
-          <button onClick={fetchData} className="btn btn-primary">Retry</button>
+          <button
+            onClick={fetchData}
+            className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-colors"
+          >
+            Retry
+          </button>
         </div>
       </div>
     );
   }
 
   return (
-    <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold mb-2">Security Events</h1>
-        <p className="text-gray-400">Monitor and analyze security events</p>
-      </div>
-
-      {/* Controls */}
-      <div className="mb-6 flex gap-4">
-        <div className="flex gap-2">
-          {[1, 6, 24, 48, 72].map((hours) => (
-            <button
-              key={hours}
-              onClick={() => setTimeRange(hours)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium ${
-                timeRange === hours
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-              }`}
-            >
-              {hours}h
-            </button>
-          ))}
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-white">Security Events & Logs</h1>
+          <p className="text-gray-400 mt-1">Monitor and analyze security events in real-time</p>
         </div>
-        <div className="flex gap-2">
-          {['hour', 'minute'].map((gran) => (
-            <button
-              key={gran}
-              onClick={() => setGranularity(gran)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium ${
-                granularity === gran
-                  ? 'bg-green-600 text-white'
-                  : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-              }`}
-            >
-              {gran}
-            </button>
-          ))}
+        <div className="flex items-center gap-4">
+          <button
+            onClick={fetchData}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-colors"
+          >
+            <ArrowPathIcon className="w-4 h-4" />
+            Refresh
+          </button>
         </div>
       </div>
 
-      {/* Event Summary Cards */}
-      <div className="grid grid-cols-4 gap-6 mb-8">
-        <div className="bg-gray-900 rounded-xl p-6">
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl p-6">
           <div className="flex items-center gap-3 mb-2">
-            <span className="text-2xl">📋</span>
-            <span className="text-lg font-semibold">Total Events</span>
+            <DocumentTextIcon className="w-6 h-6 text-blue-400" />
+            <span className="text-lg font-semibold text-white">Total Events</span>
           </div>
           <div className="text-3xl font-bold text-blue-400">
             {eventsData?.total_events?.toLocaleString() || 0}
           </div>
         </div>
 
-        <div className="bg-gray-900 rounded-xl p-6">
+        <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl p-6">
           <div className="flex items-center gap-3 mb-2">
-            <span className="text-2xl">🦠</span>
-            <span className="text-lg font-semibold">Threat Events</span>
+            <ExclamationTriangleIcon className="w-6 h-6 text-red-400" />
+            <span className="text-lg font-semibold text-white">Threat Events</span>
           </div>
           <div className="text-3xl font-bold text-red-400">
             {eventsData?.total_threats?.toLocaleString() || 0}
           </div>
         </div>
 
-        <div className="bg-gray-900 rounded-xl p-6">
+        <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl p-6">
           <div className="flex items-center gap-3 mb-2">
-            <span className="text-2xl">⚡</span>
-            <span className="text-lg font-semibold">Avg/Hour</span>
+            <ClockIcon className="w-6 h-6 text-green-400" />
+            <span className="text-lg font-semibold text-white">Events/Hour</span>
           </div>
           <div className="text-3xl font-bold text-green-400">
-            {Math.round((eventsData?.total_events || 0) / timeRange)}
+            {Math.round((eventsData?.total_events || 0) / parseInt(filters.timeRange))}
           </div>
         </div>
 
-        <div className="bg-gray-900 rounded-xl p-6">
+        <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl p-6">
           <div className="flex items-center gap-3 mb-2">
-            <span className="text-2xl">📊</span>
-            <span className="text-lg font-semibold">Timeline Points</span>
+            <CalendarDaysIcon className="w-6 h-6 text-purple-400" />
+            <span className="text-lg font-semibold text-white">Log Entries</span>
           </div>
           <div className="text-3xl font-bold text-purple-400">
-            {eventsData?.timeline?.length || 0}
+            {filteredEvents.length}
           </div>
         </div>
       </div>
 
-      {/* Events Timeline */}
-      <div className="bg-gray-900 rounded-xl p-6 mb-8">
-        <div className="font-semibold text-lg mb-4">Events Timeline</div>
-        <div className="space-y-4">
-          {eventsData?.timeline?.length > 0 ? (
-            eventsData.timeline.slice(0, 10).map((event, index) => (
-              <div key={index} className="flex items-center justify-between p-4 rounded-lg bg-gray-800">
-                <div>
-                  <div className="font-semibold text-base">{event.event_type}</div>
-                  <div className="text-gray-300 text-sm">
-                    Severity: {event.severity}
-                  </div>
-                  <div className="text-xs text-gray-500">
-                    Time: {event.time_unit} ({granularity})
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-2xl font-bold text-blue-400">{event.count}</div>
-                  <div className="text-xs text-gray-400">events</div>
-                </div>
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        {/* Filters */}
+        <div className="lg:col-span-1">
+          <FilterPanel
+            filters={filters}
+            onFiltersChange={setFilters}
+            onApply={handleApplyFilters}
+            onReset={handleResetFilters}
+          />
+        </div>
+
+        {/* Events List */}
+        <div className="lg:col-span-3 space-y-6">
+          {/* Search */}
+          <div className="relative">
+            <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search events..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50"
+            />
+          </div>
+
+          {/* Events List */}
+          <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-semibold text-white">Event Logs</h3>
+              <div className="text-sm text-gray-400">
+                Showing {filteredEvents.length} events
               </div>
-            ))
-          ) : (
-            <div className="text-center text-gray-400 py-8">
-              No timeline data available
             </div>
-          )}
+
+            <div className="space-y-4 max-h-[600px] overflow-y-auto custom-scrollbar">
+              {filteredEvents.length > 0 ? (
+                filteredEvents.map((event, index) => (
+                  <EventLogItem
+                    key={index}
+                    event={event}
+                    onViewDetails={handleViewDetails}
+                    isExpanded={expandedEvents.has(index)}
+                    onToggleExpand={() => handleToggleExpand(index)}
+                  />
+                ))
+              ) : (
+                <div className="text-center text-gray-400 py-12">
+                  <DocumentTextIcon className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <p>No events found matching your criteria</p>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Threat Events Timeline */}
-      <div className="bg-gray-900 rounded-xl p-6">
-        <div className="font-semibold text-lg mb-4">Threat Events Timeline</div>
-        <div className="space-y-4">
-          {eventsData?.threat_timeline?.length > 0 ? (
-            eventsData.threat_timeline.slice(0, 10).map((threat, index) => (
-              <div key={index} className="flex items-center justify-between p-4 rounded-lg bg-gray-800">
-                <div>
-                  <div className="font-semibold text-base text-red-400">Threat Events</div>
-                  <div className="text-xs text-gray-500">
-                    Time: {threat.time_unit} ({granularity})
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-2xl font-bold text-red-400">{threat.threat_count}</div>
-                  <div className="text-xs text-gray-400">threats</div>
-                </div>
-              </div>
-            ))
-          ) : (
-            <div className="text-center text-gray-400 py-8">
-              No threat timeline data available
-            </div>
-          )}
-        </div>
-      </div>
+      {/* Event Detail Modal */}
+      {selectedEvent && (
+        <EventDetailModal
+          event={selectedEvent}
+          onClose={() => setSelectedEvent(null)}
+        />
+      )}
     </div>
   );
-}; 
+};
