@@ -117,7 +117,8 @@ export default {
     },
   },
   plugins: [
-    require('@tailwindcss/forms'),
-    require('@tailwindcss/typography'),
+    // Remove these plugins temporarily - will add back after installation
+    // require('@tailwindcss/forms'),
+    // require('@tailwindcss/typography'),
   ],
-} 
+}
