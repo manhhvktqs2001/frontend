@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { fetchAlertsOverview } from '../services/api';
+import { Card } from '../components/ui/Card';
 
 export const Alerts = () => {
   const [alertsData, setAlertsData] = useState(null);
@@ -53,8 +54,8 @@ export const Alerts = () => {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold mb-2">Security Alerts</h1>
-        <p className="text-gray-400">Monitor and respond to security incidents</p>
+        <h1 className="text-2xl font-bold text-gray-900">Security Alerts</h1>
+        <p className="text-gray-700">Monitor and respond to security incidents.</p>
       </div>
 
       {/* Time Range Selector */}
@@ -78,50 +79,50 @@ export const Alerts = () => {
 
       {/* Alert Summary Cards */}
       <div className="grid grid-cols-4 gap-6 mb-8">
-        <div className="bg-gray-900 rounded-xl p-6">
+        <Card className="bg-white border border-gray-200 shadow-md text-gray-900 dark:bg-slate-800 dark:border-slate-700 dark:text-white rounded-lg p-4 transition-colors duration-300">
           <div className="flex items-center gap-3 mb-2">
             <span className="text-2xl">⚠️</span>
             <span className="text-lg font-semibold">Total Alerts</span>
           </div>
-          <div className="text-3xl font-bold text-blue-400">
+          <div className="text-3xl font-bold text-gray-900 dark:text-white">
             {alertsData?.summary?.total_alerts || 0}
           </div>
-        </div>
+        </Card>
 
-        <div className="bg-gray-900 rounded-xl p-6">
+        <Card className="bg-white border border-gray-200 shadow-md text-gray-900 dark:bg-slate-800 dark:border-slate-700 dark:text-white rounded-lg p-4 transition-colors duration-300">
           <div className="flex items-center gap-3 mb-2">
             <span className="text-2xl">🔴</span>
             <span className="text-lg font-semibold">Critical</span>
           </div>
-          <div className="text-3xl font-bold text-red-400">
+          <div className="text-3xl font-bold text-gray-900 dark:text-white">
             {alertsData?.summary?.critical_alerts || 0}
           </div>
-        </div>
+        </Card>
 
-        <div className="bg-gray-900 rounded-xl p-6">
+        <Card className="bg-white border border-gray-200 shadow-md text-gray-900 dark:bg-slate-800 dark:border-slate-700 dark:text-white rounded-lg p-4 transition-colors duration-300">
           <div className="flex items-center gap-3 mb-2">
             <span className="text-2xl">🟠</span>
             <span className="text-lg font-semibold">High</span>
           </div>
-          <div className="text-3xl font-bold text-orange-400">
+          <div className="text-3xl font-bold text-gray-900 dark:text-white">
             {alertsData?.summary?.high_alerts || 0}
           </div>
-        </div>
+        </Card>
 
-        <div className="bg-gray-900 rounded-xl p-6">
+        <Card className="bg-white border border-gray-200 shadow-md text-gray-900 dark:bg-slate-800 dark:border-slate-700 dark:text-white rounded-lg p-4 transition-colors duration-300">
           <div className="flex items-center gap-3 mb-2">
             <span className="text-2xl">🟡</span>
             <span className="text-lg font-semibold">Open</span>
           </div>
-          <div className="text-3xl font-bold text-yellow-400">
+          <div className="text-3xl font-bold text-gray-900 dark:text-white">
             {alertsData?.summary?.open_alerts || 0}
           </div>
-        </div>
+        </Card>
       </div>
 
       {/* Alert Distribution Charts */}
       <div className="grid grid-cols-2 gap-6 mb-8">
-        <div className="bg-gray-900 rounded-xl p-6">
+        <Card className="bg-white border border-gray-200 shadow-md text-gray-900 dark:bg-slate-800 dark:border-slate-700 dark:text-white rounded-lg p-4 transition-colors duration-300">
           <div className="font-semibold text-lg mb-4">Severity Distribution</div>
           <div className="space-y-3">
             {alertsData?.severity_distribution ? (
@@ -143,9 +144,9 @@ export const Alerts = () => {
               <div className="text-gray-400">No severity data available</div>
             )}
           </div>
-        </div>
+        </Card>
 
-        <div className="bg-gray-900 rounded-xl p-6">
+        <Card className="bg-white border border-gray-200 shadow-md text-gray-900 dark:bg-slate-800 dark:border-slate-700 dark:text-white rounded-lg p-4 transition-colors duration-300">
           <div className="font-semibold text-lg mb-4">Status Distribution</div>
           <div className="space-y-3">
             {alertsData?.status_distribution ? (
@@ -167,11 +168,11 @@ export const Alerts = () => {
               <div className="text-gray-400">No status data available</div>
             )}
           </div>
-        </div>
+        </Card>
       </div>
 
       {/* Top Alert Types */}
-      <div className="bg-gray-900 rounded-xl p-6 mb-8">
+      <Card className="bg-white border border-gray-200 shadow-md text-gray-900 dark:bg-slate-800 dark:border-slate-700 dark:text-white rounded-lg p-4 transition-colors duration-300 mb-8">
         <div className="font-semibold text-lg mb-4">Top Alert Types</div>
         <div className="space-y-4">
           {alertsData?.top_alert_types?.length > 0 ? (
@@ -192,10 +193,10 @@ export const Alerts = () => {
             </div>
           )}
         </div>
-      </div>
+      </Card>
 
       {/* MITRE Tactics */}
-      <div className="bg-gray-900 rounded-xl p-6 mb-8">
+      <Card className="bg-white border border-gray-200 shadow-md text-gray-900 dark:bg-slate-800 dark:border-slate-700 dark:text-white rounded-lg p-4 transition-colors duration-300 mb-8">
         <div className="font-semibold text-lg mb-4">MITRE ATT&CK Tactics</div>
         <div className="space-y-4">
           {alertsData?.mitre_tactics?.length > 0 ? (
@@ -216,10 +217,10 @@ export const Alerts = () => {
             </div>
           )}
         </div>
-      </div>
+      </Card>
 
       {/* Recent Critical Alerts */}
-      <div className="bg-gray-900 rounded-xl p-6">
+      <Card className="bg-white border border-gray-200 shadow-md text-gray-900 dark:bg-slate-800 dark:border-slate-700 dark:text-white rounded-lg p-4 transition-colors duration-300">
         <div className="font-semibold text-lg mb-4">Recent Critical Alerts</div>
         <div className="space-y-4">
           {alertsData?.recent_critical_alerts?.length > 0 ? (
@@ -252,7 +253,7 @@ export const Alerts = () => {
             </div>
           )}
         </div>
-      </div>
+      </Card>
     </div>
   );
 }; 

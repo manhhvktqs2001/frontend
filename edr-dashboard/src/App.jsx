@@ -9,7 +9,6 @@ import { Events } from './pages/Events';
 import { Settings } from './pages/Settings';
 import { Analytics } from './pages/Analytics';
 import { Reports } from './pages/Reports';
-import { AI } from './pages/AI';
 import { Rules } from './pages/Rules';
 import { NotFound } from './pages/NotFound';
 
@@ -26,7 +25,6 @@ function App() {
         <Route path="/settings" element={<Settings />} />
         <Route path="/analytics" element={<Analytics />} />
         <Route path="/reports" element={<Reports />} />
-        <Route path="/ai" element={<AI />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </Layout>
