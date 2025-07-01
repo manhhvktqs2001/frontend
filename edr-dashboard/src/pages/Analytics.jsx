@@ -1,23 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import {
   ChartBarIcon,
-  CubeTransparentIcon,
+  CubeIcon,
   FireIcon,
   ShieldCheckIcon,
   ExclamationTriangleIcon,
   ClockIcon,
-  TrendingUpIcon,
-  TrendingDownIcon,
+  ArrowTrendingUpIcon,
+  ArrowTrendingDownIcon,
   EyeIcon,
   ArrowPathIcon,
-  CalendarDaysIcon,
-  AdjustmentsHorizontalIcon,
-  DocumentArrowDownIcon,
+  CalendarIcon,
+  Cog6ToothIcon,
+  ArrowDownTrayIcon,
   PlayIcon,
   PauseIcon,
   MapPinIcon,
   GlobeAltIcon,
-  UsersIcon,
+  UserGroupIcon,
   ServerIcon
 } from '@heroicons/react/24/outline';
 import {
@@ -46,71 +46,81 @@ import {
   Treemap,
   Sankey
 } from 'recharts';
+import apiService from '../services/api';
 
-const AdvancedAnalytics = () => {
+const Analytics = () => {
   const [timeRange, setTimeRange] = useState('7d');
   const [isRealTime, setIsRealTime] = useState(false);
-  const [selectedMetric, setSelectedMetric] = useState('all');
-  const [data, setData] = useState({});
-  const [loading, setLoading] = useState(false);
+  const [analyticsData, setAnalyticsData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Mock data for different chart types
-  const threatEvolutionData = [
-    { time: '00:00', malware: 12, phishing: 8, ransomware: 3, apt: 1, total: 24 },
-    { time: '04:00', malware: 15, phishing: 12, ransomware: 2, apt: 2, total: 31 },
-    { time: '08:00', malware: 18, phishing: 15, ransomware: 4, apt: 1, total: 38 },
-    { time: '12:00', malware: 25, phishing: 18, ransomware: 6, apt: 3, total: 52 },
-    { time: '16:00', malware: 22, phishing: 14, ransomware: 3, apt: 2, total: 41 },
-    { time: '20:00', malware: 16, phishing: 10, ransomware: 2, apt: 1, total: 29 }
-  ];
+  const fetchAnalyticsData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Fetch analytics data from API
+      const [threatAnalytics, performanceAnalytics, systemMetrics] = await Promise.all([
+        apiService.getThreatAnalytics({ timeRange }),
+        apiService.getPerformanceAnalytics({ timeRange }),
+        apiService.getSystemMetrics()
+      ]);
 
-  const attackVectorData = [
-    { name: 'Email Phishing', value: 35, color: '#ef4444' },
-    { name: 'Web Exploits', value: 28, color: '#f97316' },
-    { name: 'USB/Removable Media', value: 15, color: '#f59e0b' },
-    { name: 'Network Intrusion', value: 12, color: '#eab308' },
-    { name: 'Social Engineering', value: 10, color: '#84cc16' }
-  ];
+      setAnalyticsData({
+        threatAnalytics,
+        performanceAnalytics,
+        systemMetrics
+      });
+    } catch (err) {
+      setError(err.message);
+      console.error('Failed to fetch analytics data:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const geographicalThreatData = [
-    { country: 'Russia', threats: 145, lat: 55.7558, lng: 37.6176 },
-    { country: 'China', threats: 132, lat: 39.9042, lng: 116.4074 },
-    { country: 'North Korea', threats: 89, lat: 39.0392, lng: 125.7625 },
-    { country: 'Iran', threats: 76, lat: 35.6892, lng: 51.3890 },
-    { country: 'Brazil', threats: 54, lat: -15.8267, lng: -47.9218 }
-  ];
+  useEffect(() => {
+    fetchAnalyticsData();
+    const interval = setInterval(fetchAnalyticsData, 30000);
+    return () => clearInterval(interval);
+  }, [timeRange]);
 
-  const behavioralAnomalyData = [
-    { time: '1h', normal: 95, suspicious: 3, malicious: 2 },
-    { time: '2h', normal: 92, suspicious: 5, malicious: 3 },
-    { time: '3h', normal: 88, suspicious: 8, malicious: 4 },
-    { time: '4h', normal: 90, suspicious: 6, malicious: 4 },
-    { time: '5h', normal: 94, suspicious: 4, malicious: 2 },
-    { time: '6h', normal: 96, suspicious: 3, malicious: 1 }
-  ];
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <div className="text-gray-400">Loading analytics data...</div>
+        </div>
+      </div>
+    );
+  }
 
-  const mitreTacticsData = [
-    { tactic: 'Initial Access', detection: 85, prevention: 92, response: 78 },
-    { tactic: 'Execution', detection: 90, prevention: 88, response: 85 },
-    { tactic: 'Persistence', detection: 78, prevention: 85, response: 90 },
-    { tactic: 'Defense Evasion', detection: 72, prevention: 75, response: 80 },
-    { tactic: 'Credential Access', detection: 88, prevention: 90, response: 85 },
-    { tactic: 'Discovery', detection: 82, prevention: 78, response: 88 }
-  ];
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="text-red-400 text-xl mb-2">⚠️ Error Loading Analytics</div>
+          <div className="text-gray-400 mb-4">{error}</div>
+          <button onClick={fetchAnalyticsData} className="btn btn-primary">Retry</button>
+        </div>
+      </div>
+    );
+  }
 
-  const riskMatrixData = [
-    { x: 20, y: 80, z: 15, risk: 'Critical Vuln', severity: 'critical' },
-    { x: 40, y: 70, z: 25, risk: 'Malware Detection', severity: 'high' },
-    { x: 60, y: 50, z: 35, risk: 'Policy Violation', severity: 'medium' },
-    { x: 30, y: 30, z: 20, risk: 'Suspicious Activity', severity: 'low' },
-    { x: 80, y: 90, z: 45, risk: 'Data Exfiltration', severity: 'critical' }
-  ];
-
-  const performanceMetrics = {
-    mttr: { value: 12.5, change: -8, trend: 'down' },
-    mttd: { value: 4.2, change: -15, trend: 'down' },
-    incidents: { value: 23, change: +12, trend: 'up' },
-    falsePositives: { value: 5.8, change: -22, trend: 'down' }
+  // Use real data from API or fallback to empty data
+  const threatData = analyticsData?.threatAnalytics?.threat_evolution || [];
+  const attackVectorData = analyticsData?.threatAnalytics?.attack_vectors || [];
+  const behavioralData = analyticsData?.performanceAnalytics?.behavioral_analysis || [];
+  const mitreData = analyticsData?.threatAnalytics?.mitre_coverage || [];
+  const riskMatrixData = analyticsData?.threatAnalytics?.risk_matrix || [];
+  const geographicalData = analyticsData?.threatAnalytics?.geographical_threats || [];
+  const performanceMetrics = analyticsData?.performanceAnalytics?.metrics || {
+    mttr: { value: 0, change: 0, trend: 'down' },
+    mttd: { value: 0, change: 0, trend: 'down' },
+    incidents: { value: 0, change: 0, trend: 'up' },
+    falsePositives: { value: 0, change: 0, trend: 'down' }
   };
 
   const MetricCard = ({ title, value, unit, change, trend, icon: Icon, color }) => (
@@ -122,7 +132,7 @@ const AdvancedAnalytics = () => {
         <div className={`flex items-center gap-1 text-sm ${
           trend === 'up' ? 'text-green-400' : 'text-red-400'
         }`}>
-          {trend === 'up' ? <TrendingUpIcon className="w-4 h-4" /> : <TrendingDownIcon className="w-4 h-4" />}
+          {trend === 'up' ? <ArrowTrendingUpIcon className="w-4 h-4" /> : <ArrowTrendingDownIcon className="w-4 h-4" />}
           <span>{Math.abs(change)}%</span>
         </div>
       </div>
@@ -146,7 +156,7 @@ const AdvancedAnalytics = () => {
         </div>
       </div>
       <ResponsiveContainer width="100%" height={300}>
-        <ComposedChart data={threatEvolutionData}>
+        <ComposedChart data={threatData}>
           <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
           <XAxis dataKey="time" stroke="#9ca3af" />
           <YAxis stroke="#9ca3af" />
@@ -211,7 +221,7 @@ const AdvancedAnalytics = () => {
     <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl p-6">
       <h3 className="text-xl font-semibold text-white mb-6">Behavioral Anomaly Detection</h3>
       <ResponsiveContainer width="100%" height={300}>
-        <AreaChart data={behavioralAnomalyData}>
+        <AreaChart data={behavioralData}>
           <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
           <XAxis dataKey="time" stroke="#9ca3af" />
           <YAxis stroke="#9ca3af" />
@@ -235,7 +245,7 @@ const AdvancedAnalytics = () => {
     <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl p-6">
       <h3 className="text-xl font-semibold text-white mb-6">MITRE ATT&CK Coverage</h3>
       <ResponsiveContainer width="100%" height={300}>
-        <RadarChart cx="50%" cy="50%" outerRadius="80%" data={mitreTacticsData}>
+        <RadarChart cx="50%" cy="50%" outerRadius="80%" data={mitreData}>
           <PolarGrid />
           <PolarAngleAxis dataKey="tactic" tick={{ fill: '#9ca3af', fontSize: 12 }} />
           <PolarRadiusAxis 
@@ -297,7 +307,7 @@ const AdvancedAnalytics = () => {
     <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl p-6">
       <h3 className="text-xl font-semibold text-white mb-6">Global Threat Intelligence</h3>
       <div className="space-y-4">
-        {geographicalThreatData.map((country, index) => (
+        {geographicalData.map((country, index) => (
           <div key={index} className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
             <div className="flex items-center gap-3">
               <MapPinIcon className="w-4 h-4 text-red-400" />
@@ -341,7 +351,7 @@ const AdvancedAnalytics = () => {
                 {isRealTime ? 'Live' : 'Paused'}
               </button>
               <button className="p-2 bg-white/10 text-gray-300 hover:bg-white/20 rounded-lg transition-colors">
-                <DocumentArrowDownIcon className="w-5 h-5" />
+                <ArrowDownTrayIcon className="w-5 h-5" />
               </button>
             </div>
           </div>
@@ -350,7 +360,7 @@ const AdvancedAnalytics = () => {
         {/* Time Range Selector */}
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
-            <CalendarDaysIcon className="w-5 h-5 text-gray-400" />
+            <CalendarIcon className="w-5 h-5 text-gray-400" />
             <span className="text-gray-400">Time Range:</span>
           </div>
           <div className="flex gap-2">
@@ -430,4 +440,4 @@ const AdvancedAnalytics = () => {
   );
 };
 
-export default AdvancedAnalytics;
+export default Analytics;

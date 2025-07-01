@@ -16,7 +16,7 @@ import {
   BoltIcon
 } from '@heroicons/react/24/outline';
 
-const AIAssistant = () => {
+const AI = () => {
   const [messages, setMessages] = useState([
     {
       id: 1,
@@ -274,4 +274,4 @@ const AIAssistant = () => {
   );
 };
 
-export default AIAssistant; 
+export default AI; 

@@ -13,7 +13,15 @@ import {
   ExclamationTriangleIcon,
   CheckCircleIcon,
   XCircleIcon,
-  ClockIcon
+  ClockIcon,
+  Cog6ToothIcon,
+  BellIcon,
+  UserGroupIcon,
+  ServerIcon,
+  GlobeAltIcon,
+  FireIcon,
+  BoltIcon,
+  ArrowPathIcon
 } from '@heroicons/react/24/outline';
 
 const RuleCard = ({ rule, onEdit, onDelete, onToggle, onDuplicate, onView }) => {
@@ -580,7 +588,7 @@ network.bytes > 10MB`,
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl p-6">
           <div className="flex items-center gap-3 mb-2">
-            <AdjustmentsHorizontalIcon className="w-6 h-6 text-blue-400" />
+            <Cog6ToothIcon className="w-6 h-6 text-blue-400" />
             <span className="text-lg font-semibold text-white">Total Rules</span>
           </div>
           <div className="text-3xl font-bold text-blue-400">{stats.total}</div>
@@ -675,7 +683,7 @@ network.bytes > 10MB`,
           ))
         ) : (
           <div className="text-center py-12">
-            <AdjustmentsHorizontalIcon className="w-16 h-16 mx-auto mb-4 text-gray-600" />
+            <Cog6ToothIcon className="w-16 h-16 mx-auto mb-4 text-gray-600" />
             <h3 className="text-xl font-medium text-gray-400 mb-2">No rules found</h3>
             <p className="text-gray-500">
               {searchQuery || Object.values(filters).some(f => f) 

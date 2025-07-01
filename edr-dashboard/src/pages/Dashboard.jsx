@@ -1,3 +1,6 @@
+// File: src/pages/Dashboard.jsx
+// Updated Dashboard component with real API integration
+
 import React, { useState, useEffect } from 'react';
 import { 
   fetchDashboardStats, 
@@ -5,7 +8,8 @@ import {
   fetchAlertsOverview,
   fetchThreatsOverview,
   fetchSystemOverview,
-  fetchRealTimeStats
+  fetchRealTimeStats,
+  EDRWebSocket
 } from '../services/api';
 import { 
   ShieldCheckIcon,
@@ -43,10 +47,10 @@ import {
   Tooltip,
   ResponsiveContainer,
   RadialBarChart,
-  RadialBar,
-  Legend
+  RadialBar
 } from 'recharts';
 
+// MetricCard Component
 const MetricCard = ({ icon: Icon, title, value, change, changeType, description, color = "blue", loading = false }) => {
   const getColorClasses = (color) => {
     const colors = {
@@ -80,7 +84,6 @@ const MetricCard = ({ icon: Icon, title, value, change, changeType, description,
 
   return (
     <div className="stat-card group relative overflow-hidden">
-      {/* Gradient background */}
       <div className={`absolute inset-0 bg-gradient-to-br ${getColorClasses(color)} opacity-5 group-hover:opacity-10 transition-opacity duration-300`}></div>
       
       <div className="relative z-10">
@@ -113,13 +116,24 @@ const MetricCard = ({ icon: Icon, title, value, change, changeType, description,
   );
 };
 
-const SecurityScoreGauge = ({ score, maxScore = 100 }) => {
+// Security Score Gauge Component
+const SecurityScoreGauge = ({ score, maxScore = 100, loading = false }) => {
+  if (loading) {
+    return (
+      <div className="stat-card h-64 animate-pulse">
+        <div className="h-6 bg-white/10 rounded mb-4"></div>
+        <div className="h-32 bg-white/10 rounded-full mx-auto mb-4"></div>
+        <div className="h-4 bg-white/10 rounded mx-auto"></div>
+      </div>
+    );
+  }
+
   const percentage = (score / maxScore) * 100;
   const getScoreColor = () => {
-    if (percentage >= 90) return "#10b981"; // green
-    if (percentage >= 70) return "#f59e0b"; // yellow
-    if (percentage >= 50) return "#f97316"; // orange
-    return "#ef4444"; // red
+    if (percentage >= 90) return "#10b981";
+    if (percentage >= 70) return "#f59e0b";
+    if (percentage >= 50) return "#f97316";
+    return "#ef4444";
   };
 
   const data = [
@@ -167,7 +181,17 @@ const SecurityScoreGauge = ({ score, maxScore = 100 }) => {
   );
 };
 
-const ThreatDetectionChart = ({ data }) => {
+// Threat Detection Chart Component
+const ThreatDetectionChart = ({ data, loading = false }) => {
+  if (loading) {
+    return (
+      <div className="stat-card h-80 animate-pulse">
+        <div className="h-6 bg-white/10 rounded mb-4"></div>
+        <div className="h-64 bg-white/10 rounded"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="stat-card">
       <h3 className="text-lg font-semibold text-white mb-4">Threat Detection Trends</h3>
@@ -204,7 +228,17 @@ const ThreatDetectionChart = ({ data }) => {
   );
 };
 
-const AlertSeverityPie = ({ data }) => {
+// Alert Severity Pie Chart Component
+const AlertSeverityPie = ({ data, loading = false }) => {
+  if (loading) {
+    return (
+      <div className="stat-card h-80 animate-pulse">
+        <div className="h-6 bg-white/10 rounded mb-4"></div>
+        <div className="h-64 bg-white/10 rounded-full mx-auto"></div>
+      </div>
+    );
+  }
+
   const COLORS = {
     Critical: '#ef4444',
     High: '#f97316', 
@@ -238,60 +272,27 @@ const AlertSeverityPie = ({ data }) => {
               color: '#fff'
             }} 
           />
-          <Legend />
         </PieChart>
       </ResponsiveContainer>
     </div>
   );
 };
 
-const SystemHealthMonitor = ({ cpuUsage, memoryUsage, diskUsage, networkLatency }) => {
-  const getHealthColor = (value) => {
-    if (value < 60) return 'text-green-400';
-    if (value < 80) return 'text-yellow-400';
-    return 'text-red-400';
-  };
-
-  const getHealthBg = (value) => {
-    if (value < 60) return 'bg-green-500';
-    if (value < 80) return 'bg-yellow-500';
-    return 'bg-red-500';
-  };
-
-  return (
-    <div className="stat-card">
-      <h3 className="text-lg font-semibold text-white mb-4">System Health</h3>
-      <div className="space-y-4">
-        {[
-          { label: 'CPU Usage', value: cpuUsage, icon: CpuChipIcon },
-          { label: 'Memory', value: memoryUsage, icon: ServerIcon },
-          { label: 'Disk Usage', value: diskUsage, icon: ServerIcon },
-          { label: 'Network Latency', value: networkLatency, unit: 'ms', icon: GlobeAltIcon }
-        ].map((metric, index) => (
-          <div key={index} className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <metric.icon className="w-4 h-4 text-gray-400" />
-              <span className="text-gray-300 text-sm">{metric.label}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-20 bg-gray-700 rounded-full h-2">
-                <div 
-                  className={`h-2 rounded-full ${getHealthBg(metric.value)}`}
-                  style={{ width: `${Math.min(metric.value, 100)}%` }}
-                ></div>
-              </div>
-              <span className={`text-sm font-medium ${getHealthColor(metric.value)} min-w-[3rem]`}>
-                {metric.value}{metric.unit || '%'}
-              </span>
-            </div>
-          </div>
-        ))}
+// Real-time Activity Feed Component
+const RealtimeActivityFeed = ({ activities, loading = false }) => {
+  if (loading) {
+    return (
+      <div className="stat-card">
+        <div className="h-6 bg-white/10 rounded mb-4"></div>
+        <div className="space-y-3">
+          {[1,2,3,4,5].map(i => (
+            <div key={i} className="h-16 bg-white/10 rounded animate-pulse"></div>
+          ))}
+        </div>
       </div>
-    </div>
-  );
-};
+    );
+  }
 
-const RealtimeActivityFeed = ({ activities }) => {
   const getActivityIcon = (type) => {
     switch(type) {
       case 'threat': return <BugAntIcon className="w-4 h-4 text-red-400" />;
@@ -327,57 +328,9 @@ const RealtimeActivityFeed = ({ activities }) => {
   );
 };
 
-const TopThreatsTable = ({ threats }) => {
-  return (
-    <div className="stat-card">
-      <h3 className="text-lg font-semibold text-white mb-4">Top Threats</h3>
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead>
-            <tr className="border-b border-gray-700">
-              <th className="text-left text-gray-400 text-xs font-medium uppercase tracking-wider py-2">Threat</th>
-              <th className="text-left text-gray-400 text-xs font-medium uppercase tracking-wider py-2">Severity</th>
-              <th className="text-left text-gray-400 text-xs font-medium uppercase tracking-wider py-2">Count</th>
-              <th className="text-left text-gray-400 text-xs font-medium uppercase tracking-wider py-2">Action</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-700">
-            {threats?.map((threat, index) => (
-              <tr key={index} className="hover:bg-white/5">
-                <td className="py-3">
-                  <div className="flex items-center gap-2">
-                    <BugAntIcon className="w-4 h-4 text-red-400" />
-                    <span className="text-white text-sm font-medium">{threat.name}</span>
-                  </div>
-                </td>
-                <td className="py-3">
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    threat.severity === 'Critical' ? 'bg-red-500/20 text-red-400' :
-                    threat.severity === 'High' ? 'bg-orange-500/20 text-orange-400' :
-                    threat.severity === 'Medium' ? 'bg-yellow-500/20 text-yellow-400' :
-                    'bg-green-500/20 text-green-400'
-                  }`}>
-                    {threat.severity}
-                  </span>
-                </td>
-                <td className="py-3">
-                  <span className="text-white text-sm">{threat.count}</span>
-                </td>
-                <td className="py-3">
-                  <button className="text-blue-400 hover:text-blue-300 text-sm">
-                    Investigate
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-};
-
+// Main Dashboard Component
 export const Dashboard = () => {
+  // State management
   const [dashboardData, setDashboardData] = useState(null);
   const [agentsData, setAgentsData] = useState(null);
   const [alertsData, setAlertsData] = useState(null);
@@ -386,61 +339,62 @@ export const Dashboard = () => {
   const [realtimeData, setRealtimeData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [webSocket, setWebSocket] = useState(null);
 
-  // Mock data for charts
-  const threatTrendData = [
-    { time: '00:00', threats: 12 },
-    { time: '04:00', threats: 8 },
-    { time: '08:00', threats: 15 },
-    { time: '12:00', threats: 23 },
-    { time: '16:00', threats: 18 },
-    { time: '20:00', threats: 11 },
-  ];
+  // Chart data state
+  const [threatTrendData, setThreatTrendData] = useState([]);
+  const [alertDistributionData, setAlertDistributionData] = useState([]);
 
-  const alertDistributionData = [
-    { name: 'Critical', value: 12 },
-    { name: 'High', value: 34 },
-    { name: 'Medium', value: 67 },
-    { name: 'Low', value: 23 },
-  ];
-
-  const mockRealtimeActivities = [
-    { type: 'threat', message: 'Malicious file detected on endpoint WIN-SRV-01', timestamp: '2 minutes ago' },
-    { type: 'alert', message: 'Suspicious PowerShell execution blocked', timestamp: '5 minutes ago' },
-    { type: 'scan', message: 'Full system scan completed on 45 endpoints', timestamp: '8 minutes ago' },
-    { type: 'update', message: 'Threat definitions updated successfully', timestamp: '12 minutes ago' },
-    { type: 'alert', message: 'Failed login attempts detected', timestamp: '15 minutes ago' },
-  ];
-
-  const mockTopThreats = [
-    { name: 'Trojan.GenKryptik', severity: 'Critical', count: 15 },
-    { name: 'Ransomware.WannaCry', severity: 'Critical', count: 8 },
-    { name: 'Adware.BrowseFox', severity: 'Medium', count: 23 },
-    { name: 'PUA.InstallCore', severity: 'Low', count: 45 },
-  ];
-
+  // Fetch all dashboard data
   const fetchAllData = async () => {
     try {
       setLoading(true);
       setError(null);
       
-      // Fetch all data in parallel
-      const [dashboard, agents, alerts, threats, system, realtime] = await Promise.allSettled([
+      // Fetch all data in parallel with error handling
+      const results = await Promise.allSettled([
         fetchDashboardStats(),
         fetchAgentsOverview(),
-        fetchAlertsOverview(),
-        fetchThreatsOverview(),
+        fetchAlertsOverview(24),
+        fetchThreatsOverview(24),
         fetchSystemOverview(),
         fetchRealTimeStats()
       ]);
 
-      // Handle successful responses
-      if (dashboard.status === 'fulfilled') setDashboardData(dashboard.value);
+      // Process results
+      const [dashboard, agents, alerts, threats, system, realtime] = results;
+
+      if (dashboard.status === 'fulfilled') {
+        setDashboardData(dashboard.value);
+        // Update chart data from API response
+        if (dashboard.value.threat_timeline) {
+          setThreatTrendData(dashboard.value.threat_timeline);
+        }
+      }
+      
       if (agents.status === 'fulfilled') setAgentsData(agents.value);
-      if (alerts.status === 'fulfilled') setAlertsData(alerts.value);
+      
+      if (alerts.status === 'fulfilled') {
+        setAlertsData(alerts.value);
+        // Update alert distribution chart
+        if (alerts.value.severity_distribution) {
+          const chartData = Object.entries(alerts.value.severity_distribution).map(([name, value]) => ({
+            name,
+            value
+          }));
+          setAlertDistributionData(chartData);
+        }
+      }
+      
       if (threats.status === 'fulfilled') setThreatsData(threats.value);
       if (system.status === 'fulfilled') setSystemData(system.value);
       if (realtime.status === 'fulfilled') setRealtimeData(realtime.value);
+
+      // Handle any errors
+      const errors = results.filter(result => result.status === 'rejected');
+      if (errors.length > 0) {
+        console.error('Some API calls failed:', errors);
+      }
 
     } catch (err) {
       setError(err.message);
@@ -450,14 +404,86 @@ export const Dashboard = () => {
     }
   };
 
+  // WebSocket connection for real-time updates
+  useEffect(() => {
+    const ws = new EDRWebSocket(
+      (data) => {
+        // Handle real-time updates
+        switch (data.type) {
+          case 'new_alert':
+            setRealtimeData(prev => ({
+              ...prev,
+              activities: [data.payload, ...(prev?.activities || []).slice(0, 9)]
+            }));
+            break;
+          case 'agent_status':
+            setAgentsData(prev => prev ? {
+              ...prev,
+              summary: { ...prev.summary, ...data.payload }
+            } : null);
+            break;
+          case 'threat_detected':
+            setRealtimeData(prev => ({
+              ...prev,
+              activities: [data.payload, ...(prev?.activities || []).slice(0, 9)]
+            }));
+            break;
+          default:
+            break;
+        }
+      },
+      (error) => {
+        console.error('WebSocket error:', error);
+      }
+    );
+
+    ws.connect();
+    setWebSocket(ws);
+
+    return () => {
+      ws.disconnect();
+    };
+  }, []);
+
+  // Initial data fetch and periodic updates
   useEffect(() => {
     fetchAllData();
     
-    // Set up real-time updates every 30 seconds
+    // Set up periodic updates every 30 seconds
     const interval = setInterval(fetchAllData, 30000);
     
     return () => clearInterval(interval);
   }, []);
+
+  // Loading state
+  if (loading && !dashboardData) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <div className="text-gray-400">Loading dashboard data...</div>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error && !dashboardData) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="text-red-400 text-xl mb-2">⚠️ Error Loading Dashboard</div>
+          <div className="text-gray-400 mb-4">{error}</div>
+          <button
+            onClick={fetchAllData}
+            className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -491,9 +517,9 @@ export const Dashboard = () => {
         <MetricCard
           icon={ShieldCheckIcon}
           title="Protected Endpoints"
-          value={agentsData?.summary?.total_agents || '---'}
-          change="+2.3%"
-          changeType="positive"
+          value={agentsData?.summary?.total_agents?.toLocaleString() || '---'}
+          change={agentsData?.summary?.agent_change || null}
+          changeType={agentsData?.summary?.agent_change?.startsWith('+') ? 'positive' : 'negative'}
           description="Active security agents"
           color="green"
           loading={loading}
@@ -502,9 +528,9 @@ export const Dashboard = () => {
         <MetricCard
           icon={ExclamationTriangleIcon}
           title="Active Alerts"
-          value={alertsData?.summary?.total_alerts || '---'}
-          change="-8.1%"
-          changeType="positive"
+          value={alertsData?.summary?.open_alerts?.toLocaleString() || '---'}
+          change={alertsData?.summary?.alert_change || null}
+          changeType={alertsData?.summary?.alert_change?.startsWith('-') ? 'positive' : 'negative'}
           description="Requiring attention"
           color="orange"
           loading={loading}
@@ -513,8 +539,8 @@ export const Dashboard = () => {
         <MetricCard
           icon={BugAntIcon}
           title="Threats Detected"
-          value={threatsData?.summary?.detected_24h || '---'}
-          change="+12.4%"
+          value={threatsData?.summary?.detected_24h?.toLocaleString() || '---'}
+          change={threatsData?.summary?.threat_change || null}
           changeType="negative"
           description="Last 24 hours"
           color="red"
@@ -524,8 +550,8 @@ export const Dashboard = () => {
         <MetricCard
           icon={FireIcon}
           title="Incidents Resolved"
-          value={dashboardData?.incidents_resolved || '---'}
-          change="+5.7%"
+          value={dashboardData?.incidents_resolved?.toLocaleString() || '---'}
+          change={dashboardData?.resolution_change || null}
           changeType="positive"
           description="This week"
           color="purple"
@@ -535,101 +561,63 @@ export const Dashboard = () => {
 
       {/* Security Score and System Health */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <SecurityScoreGauge score={dashboardData?.security_score || 87} />
-        
-        <SystemHealthMonitor
-          cpuUsage={systemData?.cpu_usage || 45}
-          memoryUsage={systemData?.memory_usage || 67}
-          diskUsage={systemData?.disk_usage || 34}
-          networkLatency={systemData?.network_latency || 12}
+        <SecurityScoreGauge 
+          score={dashboardData?.security_score || 87} 
+          loading={loading}
         />
         
-        <RealtimeActivityFeed activities={realtimeData?.activities || mockRealtimeActivities} />
+        <SystemHealthMonitor
+          systemData={systemData}
+          loading={loading}
+        />
+        
+        <RealtimeActivityFeed 
+          activities={realtimeData?.activities} 
+          loading={loading}
+        />
       </div>
 
       {/* Advanced Analytics Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <ThreatDetectionChart data={threatTrendData} />
-        <AlertSeverityPie data={alertDistributionData} />
+        <ThreatDetectionChart 
+          data={threatTrendData} 
+          loading={loading}
+        />
+        <AlertSeverityPie 
+          data={alertDistributionData} 
+          loading={loading}
+        />
       </div>
 
       {/* Detailed Intelligence */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <TopThreatsTable threats={mockTopThreats} />
+        <TopThreatsTable 
+          threats={threatsData?.top_threats} 
+          loading={loading}
+        />
         
-        <div className="stat-card">
-          <h3 className="text-lg font-semibold text-white mb-4">MITRE ATT&CK Coverage</h3>
-          <div className="space-y-4">
-            {[
-              { tactic: 'Initial Access', coverage: 92, count: 15 },
-              { tactic: 'Execution', coverage: 88, count: 22 },
-              { tactic: 'Persistence', coverage: 94, count: 18 },
-              { tactic: 'Defense Evasion', coverage: 76, count: 31 },
-              { tactic: 'Credential Access', coverage: 85, count: 12 }
-            ].map((item, index) => (
-              <div key={index} className="flex items-center justify-between">
-                <div>
-                  <span className="text-white text-sm font-medium">{item.tactic}</span>
-                  <span className="text-gray-400 text-xs ml-2">({item.count} techniques)</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-20 bg-gray-700 rounded-full h-2">
-                    <div 
-                      className="h-2 rounded-full bg-blue-500"
-                      style={{ width: `${item.coverage}%` }}
-                    ></div>
-                  </div>
-                  <span className="text-blue-400 text-sm font-medium min-w-[3rem]">
-                    {item.coverage}%
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        <MitreCoveragePanel 
+          coverage={dashboardData?.mitre_coverage}
+          loading={loading}
+        />
       </div>
 
       {/* AI Insights Panel */}
-      <div className="stat-card">
-        <div className="flex items-center gap-2 mb-4">
-          <LightBulbIcon className="w-6 h-6 text-yellow-400" />
-          <h3 className="text-lg font-semibold text-white">AI Security Insights</h3>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
-            <h4 className="text-blue-400 font-medium mb-2">Anomaly Detection</h4>
-            <p className="text-gray-300 text-sm">
-              Unusual network traffic patterns detected in subnet 192.168.1.0/24 
-              suggesting potential lateral movement.
-            </p>
-          </div>
-          <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4">
-            <h4 className="text-yellow-400 font-medium mb-2">Risk Assessment</h4>
-            <p className="text-gray-300 text-sm">
-              Endpoint WIN-WS-045 shows signs of compromise. Recommend immediate isolation 
-              and forensic analysis.
-            </p>
-          </div>
-          <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4">
-            <h4 className="text-green-400 font-medium mb-2">Optimization</h4>
-            <p className="text-gray-300 text-sm">
-              Security posture improved by 12% this week. Consider implementing 
-              advanced behavioral analytics.
-            </p>
-          </div>
-        </div>
-      </div>
+      <AIInsightsPanel 
+        insights={dashboardData?.ai_insights}
+        loading={loading}
+      />
 
       {/* Footer Status */}
       <div className="flex items-center justify-between py-4 border-t border-white/10">
         <div className="flex items-center gap-6 text-sm text-gray-400">
           <div className="flex items-center gap-2">
             <ClockIcon className="w-4 h-4" />
-            <span>Last updated: {new Date().toLocaleTimeString()}</span>
+            <span>Last updated: {dashboardData?.last_updated || new Date().toLocaleTimeString()}</span>
           </div>
           <div className="flex items-center gap-2">
             <ServerIcon className="w-4 h-4" />
-            <span>System load: Normal</span>
+            <span>System load: {systemData?.system_load || 'Normal'}</span>
           </div>
           <div className="flex items-center gap-2">
             <SignalIcon className="w-4 h-4 text-green-400" />
@@ -640,6 +628,249 @@ export const Dashboard = () => {
         <div className="text-sm text-gray-500">
           WatchGuard EDR Platform v3.0.0
         </div>
+      </div>
+    </div>
+  );
+};
+
+// System Health Monitor Component
+const SystemHealthMonitor = ({ systemData, loading = false }) => {
+  if (loading) {
+    return (
+      <div className="stat-card">
+        <div className="h-6 bg-white/10 rounded mb-4"></div>
+        <div className="space-y-4">
+          {[1,2,3,4].map(i => (
+            <div key={i} className="h-8 bg-white/10 rounded animate-pulse"></div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  const getHealthColor = (value) => {
+    if (value < 60) return 'text-green-400';
+    if (value < 80) return 'text-yellow-400';
+    return 'text-red-400';
+  };
+
+  const getHealthBg = (value) => {
+    if (value < 60) return 'bg-green-500';
+    if (value < 80) return 'bg-yellow-500';
+    return 'bg-red-500';
+  };
+
+  const metrics = [
+    { label: 'CPU Usage', value: systemData?.cpu_usage || 0, icon: CpuChipIcon },
+    { label: 'Memory', value: systemData?.memory_usage || 0, icon: ServerIcon },
+    { label: 'Disk Usage', value: systemData?.disk_usage || 0, icon: ServerIcon },
+    { label: 'Network Latency', value: systemData?.network_latency || 0, unit: 'ms', icon: GlobeAltIcon }
+  ];
+
+  return (
+    <div className="stat-card">
+      <h3 className="text-lg font-semibold text-white mb-4">System Health</h3>
+      <div className="space-y-4">
+        {metrics.map((metric, index) => (
+          <div key={index} className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <metric.icon className="w-4 h-4 text-gray-400" />
+              <span className="text-gray-300 text-sm">{metric.label}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-20 bg-gray-700 rounded-full h-2">
+                <div 
+                  className={`h-2 rounded-full ${getHealthBg(metric.value)}`}
+                  style={{ width: `${Math.min(metric.value, 100)}%` }}
+                ></div>
+              </div>
+              <span className={`text-sm font-medium ${getHealthColor(metric.value)} min-w-[3rem]`}>
+                {metric.value}{metric.unit || '%'}
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// Top Threats Table Component
+const TopThreatsTable = ({ threats, loading = false }) => {
+  if (loading) {
+    return (
+      <div className="stat-card">
+        <div className="h-6 bg-white/10 rounded mb-4"></div>
+        <div className="space-y-4">
+          {[1,2,3,4].map(i => (
+            <div key={i} className="h-16 bg-white/10 rounded animate-pulse"></div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="stat-card">
+      <h3 className="text-lg font-semibold text-white mb-4">Top Threats</h3>
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          <thead>
+            <tr className="border-b border-gray-700">
+              <th className="text-left text-gray-400 text-xs font-medium uppercase tracking-wider py-2">Threat</th>
+              <th className="text-left text-gray-400 text-xs font-medium uppercase tracking-wider py-2">Severity</th>
+              <th className="text-left text-gray-400 text-xs font-medium uppercase tracking-wider py-2">Count</th>
+              <th className="text-left text-gray-400 text-xs font-medium uppercase tracking-wider py-2">Action</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-700">
+            {threats?.map((threat, index) => (
+              <tr key={index} className="hover:bg-white/5">
+                <td className="py-3">
+                  <div className="flex items-center gap-2">
+                    <BugAntIcon className="w-4 h-4 text-red-400" />
+                    <span className="text-white text-sm font-medium">{threat.threat_name || threat.name}</span>
+                  </div>
+                </td>
+                <td className="py-3">
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    threat.severity === 'Critical' ? 'bg-red-500/20 text-red-400' :
+                    threat.severity === 'High' ? 'bg-orange-500/20 text-orange-400' :
+                    threat.severity === 'Medium' ? 'bg-yellow-500/20 text-yellow-400' :
+                    'bg-green-500/20 text-green-400'
+                  }`}>
+                    {threat.severity}
+                  </span>
+                </td>
+                <td className="py-3">
+                  <span className="text-white text-sm">{threat.count || threat.detections}</span>
+                </td>
+                <td className="py-3">
+                  <button className="text-blue-400 hover:text-blue-300 text-sm">
+                    Investigate
+                  </button>
+                </td>
+              </tr>
+            )) || (
+              <tr>
+                <td colSpan="4" className="py-8 text-center text-gray-400">
+                  No threat data available
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
+// MITRE Coverage Panel Component
+const MitreCoveragePanel = ({ coverage, loading = false }) => {
+  if (loading) {
+    return (
+      <div className="stat-card">
+        <div className="h-6 bg-white/10 rounded mb-4"></div>
+        <div className="space-y-4">
+          {[1,2,3,4,5].map(i => (
+            <div key={i} className="h-8 bg-white/10 rounded animate-pulse"></div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  const defaultCoverage = [
+    { tactic: 'Initial Access', coverage: 92, count: 15 },
+    { tactic: 'Execution', coverage: 88, count: 22 },
+    { tactic: 'Persistence', coverage: 94, count: 18 },
+    { tactic: 'Defense Evasion', coverage: 76, count: 31 },
+    { tactic: 'Credential Access', coverage: 85, count: 12 }
+  ];
+
+  const tactics = coverage || defaultCoverage;
+
+  return (
+    <div className="stat-card">
+      <h3 className="text-lg font-semibold text-white mb-4">MITRE ATT&CK Coverage</h3>
+      <div className="space-y-4">
+        {tactics.map((item, index) => (
+          <div key={index} className="flex items-center justify-between">
+            <div>
+              <span className="text-white text-sm font-medium">{item.tactic}</span>
+              <span className="text-gray-400 text-xs ml-2">({item.count || item.technique_count} techniques)</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-20 bg-gray-700 rounded-full h-2">
+                <div 
+                  className="h-2 rounded-full bg-blue-500"
+                  style={{ width: `${item.coverage}%` }}
+                ></div>
+              </div>
+              <span className="text-blue-400 text-sm font-medium min-w-[3rem]">
+                {item.coverage}%
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// AI Insights Panel Component
+const AIInsightsPanel = ({ insights, loading = false }) => {
+  if (loading) {
+    return (
+      <div className="stat-card">
+        <div className="h-6 bg-white/10 rounded mb-4"></div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {[1,2,3].map(i => (
+            <div key={i} className="h-24 bg-white/10 rounded animate-pulse"></div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  const defaultInsights = [
+    {
+      type: 'anomaly',
+      title: 'Anomaly Detection',
+      message: 'Unusual network traffic patterns detected in subnet 192.168.1.0/24 suggesting potential lateral movement.',
+      color: 'blue'
+    },
+    {
+      type: 'risk',
+      title: 'Risk Assessment', 
+      message: 'Endpoint WIN-WS-045 shows signs of compromise. Recommend immediate isolation and forensic analysis.',
+      color: 'yellow'
+    },
+    {
+      type: 'optimization',
+      title: 'Optimization',
+      message: 'Security posture improved by 12% this week. Consider implementing advanced behavioral analytics.',
+      color: 'green'
+    }
+  ];
+
+  const aiInsights = insights || defaultInsights;
+
+  return (
+    <div className="stat-card">
+      <div className="flex items-center gap-2 mb-4">
+        <LightBulbIcon className="w-6 h-6 text-yellow-400" />
+        <h3 className="text-lg font-semibold text-white">AI Security Insights</h3>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {aiInsights.map((insight, index) => (
+          <div key={index} className={`bg-${insight.color}-500/10 border border-${insight.color}-500/30 rounded-lg p-4`}>
+            <h4 className={`text-${insight.color}-400 font-medium mb-2`}>{insight.title}</h4>
+            <p className="text-gray-300 text-sm">
+              {insight.message}
+            </p>
+          </div>
+        ))}
       </div>
     </div>
   );

@@ -1,116 +1,202 @@
-import * as React from 'react';
-import { NavLink } from 'react-router-dom';
-import { 
-  HomeIcon, 
-  ComputerDesktopIcon, 
+import React from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import {
+  HomeIcon,
+  UserGroupIcon,
   ExclamationTriangleIcon,
   ShieldExclamationIcon,
-  MagnifyingGlassIcon,
+  ClockIcon,
   ChartBarIcon,
-  CogIcon,
-  DocumentTextIcon,
   SparklesIcon,
-  AdjustmentsHorizontalIcon
+  DocumentChartBarIcon,
+  Cog6ToothIcon,
+  XMarkIcon,
+  BellIcon,
+  ServerIcon,
+  GlobeAltIcon,
+  LockClosedIcon
 } from '@heroicons/react/24/outline';
 
-const navItems = [
-  { label: 'Dashboard', path: '/', icon: HomeIcon },
-  { label: 'Endpoints', path: '/agents', icon: ComputerDesktopIcon },
-  { label: 'Alerts', path: '/alerts', icon: ExclamationTriangleIcon },
-  { label: 'Threats', path: '/threats', icon: ShieldExclamationIcon },
-  { label: 'Events', path: '/events', icon: MagnifyingGlassIcon },
-  { label: 'Rules', path: '/rules', icon: AdjustmentsHorizontalIcon },
-  { label: 'Analytics', path: '/analytics', icon: ChartBarIcon },
-  { label: 'Reports', path: '/reports', icon: DocumentTextIcon },
-  { label: 'AI Assistant', path: '/ai', icon: SparklesIcon },
-  { label: 'Settings', path: '/settings', icon: CogIcon },
-];
+const Sidebar = ({ isOpen, onClose, currentPath, systemStatus }) => {
+  const navigation = [
+    {
+      name: 'Dashboard',
+      href: '/dashboard',
+      icon: HomeIcon,
+      description: 'Security overview and metrics'
+    },
+    {
+      name: 'Agents',
+      href: '/agents',
+      icon: UserGroupIcon,
+      description: 'Endpoint management',
+      badge: '247'
+    },
+    {
+      name: 'Alerts',
+      href: '/alerts',
+      icon: ExclamationTriangleIcon,
+      description: 'Security alerts and incidents',
+      badge: '12',
+      badgeColor: 'bg-red-500'
+    },
+    {
+      name: 'Threats',
+      href: '/threats',
+      icon: ShieldExclamationIcon,
+      description: 'Threat intelligence',
+      badge: '3',
+      badgeColor: 'bg-orange-500'
+    },
+    {
+      name: 'Events',
+      href: '/events',
+      icon: ClockIcon,
+      description: 'System events and logs'
+    },
+    {
+      name: 'Analytics',
+      href: '/analytics',
+      icon: ChartBarIcon,
+      description: 'Advanced analytics and reports'
+    },
+    {
+      name: 'AI Assistant',
+      href: '/ai',
+      icon: SparklesIcon,
+      description: 'AI-powered security insights',
+      badge: 'NEW',
+      badgeColor: 'bg-purple-500'
+    },
+    {
+      name: 'Reports',
+      href: '/reports',
+      icon: DocumentChartBarIcon,
+      description: 'Security reports and compliance'
+    },
+    {
+      name: 'Settings',
+      href: '/settings',
+      icon: Cog6ToothIcon,
+      description: 'System configuration'
+    }
+  ];
 
-export const Sidebar = ({ isOpen }) => {
+  const isActive = (path) => currentPath === path;
+
   return (
-    <aside className={`fixed left-0 top-0 z-50 h-full bg-white dark:bg-gray-800 shadow-2xl border-r border-gray-200 dark:border-gray-700 transition-all duration-300 ${
-      isOpen ? 'w-64' : 'w-16'
-    }`}>
-      {/* Glass effect overlay */}
-      <div className="absolute inset-0 bg-gradient-to-b from-white/80 to-white/40 dark:from-gray-800/80 dark:to-gray-800/40 backdrop-blur-xl"></div>
-      
-      <div className="relative z-10 flex flex-col h-full">
-        {/* Logo - WatchGuard Style */}
-        <div className="h-16 flex items-center px-4 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-red-500 via-red-600 to-red-700 rounded-xl flex items-center justify-center shadow-lg">
-              <ShieldExclamationIcon className="w-6 h-6 text-white" />
-            </div>
-            {isOpen && (
+    <>
+      {/* Desktop Sidebar */}
+      <div className={`fixed inset-y-0 left-0 z-50 w-80 bg-gray-900/95 backdrop-blur-xl border-r border-white/10 transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 ${
+        isOpen ? 'translate-x-0' : '-translate-x-full'
+      }`}>
+        <div className="flex flex-col h-full">
+          {/* Header */}
+          <div className="flex items-center justify-between p-6 border-b border-white/10">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                <LockClosedIcon className="w-6 h-6 text-white" />
+              </div>
               <div>
-                <div className="text-xl font-bold bg-gradient-to-r from-red-600 to-red-700 bg-clip-text text-transparent">
-                  WatchGuard
-                </div>
-                <div className="text-xs text-gray-500 dark:text-gray-400 font-medium">
-                  EDR Platform v3.0.0
+                <h1 className="text-xl font-bold text-white">EDR v3.0.0</h1>
+                <p className="text-xs text-gray-400">Security Platform</p>
+              </div>
+            </div>
+            <button
+              onClick={onClose}
+              className="lg:hidden p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+            >
+              <XMarkIcon className="w-5 h-5" />
+            </button>
+          </div>
+
+          {/* System Status */}
+          <div className="p-4 border-b border-white/10">
+            <div className="bg-gradient-to-r from-green-500/10 to-blue-500/10 border border-green-500/20 rounded-lg p-3">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-green-400">System Status</span>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                  <span className="text-xs text-gray-400">Online</span>
                 </div>
               </div>
-            )}
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div>
+                  <span className="text-gray-400">Version:</span>
+                  <span className="text-white ml-1">{systemStatus.version}</span>
+                </div>
+                <div>
+                  <span className="text-gray-400">Agents:</span>
+                  <span className="text-white ml-1">247 Active</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Navigation */}
+          <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto custom-scrollbar">
+            {navigation.map((item) => {
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.name}
+                  to={item.href}
+                  className={`group flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 ${
+                    isActive(item.href)
+                      ? 'bg-gradient-to-r from-blue-500/20 to-purple-500/20 border border-blue-500/30 text-white shadow-lg'
+                      : 'text-gray-300 hover:bg-white/10 hover:text-white'
+                  }`}
+                >
+                  <div className={`p-2 rounded-lg transition-colors ${
+                    isActive(item.href)
+                      ? 'bg-blue-500/20 text-blue-400'
+                      : 'bg-gray-700/50 text-gray-400 group-hover:bg-white/10 group-hover:text-white'
+                  }`}>
+                    <Icon className="w-5 h-5" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">{item.name}</span>
+                      {item.badge && (
+                        <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${
+                          item.badgeColor || 'bg-blue-500'
+                        } text-white`}>
+                          {item.badge}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-400 group-hover:text-gray-300">
+                      {item.description}
+                    </p>
+                  </div>
+                </Link>
+              );
+            })}
+          </nav>
+
+          {/* Footer */}
+          <div className="p-4 border-t border-white/10">
+            <div className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/20 rounded-lg p-3">
+              <div className="flex items-center gap-2 mb-2">
+                <SparklesIcon className="w-4 h-4 text-purple-400" />
+                <span className="text-sm font-medium text-purple-400">AI Assistant</span>
+              </div>
+              <p className="text-xs text-gray-400 mb-2">
+                Get instant security insights and recommendations
+              </p>
+              <Link
+                to="/ai"
+                className="inline-flex items-center gap-2 px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-xs font-medium rounded-lg transition-colors"
+              >
+                <SparklesIcon className="w-3 h-3" />
+                Ask AI
+              </Link>
+            </div>
           </div>
         </div>
-
-        {/* Navigation */}
-        <nav className="flex-1 p-4 space-y-2">
-          {navItems.map((item) => (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              className={({ isActive }) => `
-                group relative flex items-center gap-3 px-3 py-3 rounded-xl font-medium transition-all duration-200 transform hover:scale-[1.02]
-                ${isActive 
-                  ? 'bg-gradient-to-r from-red-50 to-red-100 dark:from-red-900/30 dark:to-red-800/30 text-red-600 dark:text-red-400 shadow-lg shadow-red-100 dark:shadow-red-900/30' 
-                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 hover:text-gray-900 dark:hover:text-white'
-                }
-              `}
-              end={item.path === '/'}
-            >
-              {({ isActive }) => (
-                <>
-                  <div className={`p-1 rounded-lg ${isActive ? 'bg-red-100 dark:bg-red-800/50' : ''}`}>
-                    <item.icon className="w-5 h-5 flex-shrink-0" />
-                  </div>
-                  {isOpen && <span className="truncate">{item.label}</span>}
-                  
-                  {/* Active indicator */}
-                  {isActive && (
-                    <div className="absolute right-3 w-2 h-2 rounded-full bg-red-500 shadow-lg shadow-red-500/50" />
-                  )}
-                  
-                  {/* Tooltip for collapsed state */}
-                  {!isOpen && (
-                    <div className="absolute left-16 bg-gray-900 dark:bg-gray-700 text-white px-3 py-2 rounded-lg text-sm whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-50 shadow-xl">
-                      {item.label}
-                      <div className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-1 w-2 h-2 bg-gray-900 dark:bg-gray-700 rotate-45"></div>
-                    </div>
-                  )}
-                </>
-              )}
-            </NavLink>
-          ))}
-        </nav>
-
-        {/* Footer */}
-        {isOpen && (
-          <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-            <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600 rounded-lg p-3">
-              <div className="text-center">
-                <div className="text-xs font-semibold text-gray-700 dark:text-gray-200">
-                  System Status
-                </div>
-                <div className="flex items-center justify-center gap-2 mt-1">
-                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                  <span className="text-xs text-gray-600 dark:text-gray-300">All Systems Operational</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
-    </aside>
+    </>
   );
 };
+
+export default Sidebar;

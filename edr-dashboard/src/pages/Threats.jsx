@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { fetchThreatsOverview } from '../services/api';
+import apiService from '../services/api';
 
-export const Threats = () => {
+const Threats = () => {
   const [threatsData, setThreatsData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -11,7 +11,7 @@ export const Threats = () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await fetchThreatsOverview(timeRange);
+      const data = await apiService.getThreatsOverview();
       setThreatsData(data);
     } catch (err) {
       setError(err.message);
@@ -230,3 +230,5 @@ export const Threats = () => {
     </div>
   );
 };
+
+export default Threats;

@@ -1,17 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { fetchEventsTimeline } from '../services/api';
+import apiService from '../services/api';
 import { 
   MagnifyingGlassIcon,
   FunnelIcon,
   ArrowPathIcon,
   EyeIcon,
   DocumentTextIcon,
-  CalendarDaysIcon,
+  CalendarIcon,
   ClockIcon,
   ExclamationTriangleIcon,
   ShieldCheckIcon,
   ChevronDownIcon,
-  ChevronRightIcon
+  ChevronRightIcon,
+  InformationCircleIcon,
+  CalendarDaysIcon
 } from '@heroicons/react/24/outline';
 
 const EventLogItem = ({ event, onViewDetails, isExpanded, onToggleExpand }) => {
@@ -21,244 +23,253 @@ const EventLogItem = ({ event, onViewDetails, isExpanded, onToggleExpand }) => {
       case 'high': return 'text-orange-400 bg-orange-500/20';
       case 'medium': return 'text-yellow-400 bg-yellow-500/20';
       case 'low': return 'text-green-400 bg-green-500/20';
-      default: return 'text-blue-400 bg-blue-500/20';
+      default: return 'text-gray-400 bg-gray-500/20';
     }
   };
 
   const getEventIcon = (type) => {
     switch (type?.toLowerCase()) {
-      case 'threat': return <ExclamationTriangleIcon className="w-4 h-4" />;
-      case 'security': return <ShieldCheckIcon className="w-4 h-4" />;
-      default: return <DocumentTextIcon className="w-4 h-4" />;
+      case 'threat': return <ExclamationTriangleIcon className="w-4 h-4 text-red-400" />;
+      case 'authentication': return <InformationCircleIcon className="w-4 h-4 text-blue-400" />;
+      case 'file': return <DocumentTextIcon className="w-4 h-4 text-green-400" />;
+      case 'network': return <InformationCircleIcon className="w-4 h-4 text-purple-400" />;
+      case 'process': return <InformationCircleIcon className="w-4 h-4 text-yellow-400" />;
+      default: return <InformationCircleIcon className="w-4 h-4 text-gray-400" />;
     }
   };
 
   return (
-    <div className="bg-white/5 border border-white/10 rounded-xl p-4 hover:bg-white/10 transition-all duration-200">
+    <div className="bg-white/5 rounded-lg p-4 hover:bg-white/10 transition-colors">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4 flex-1">
-          <button
-            onClick={onToggleExpand}
-            className="text-gray-400 hover:text-white transition-colors"
-          >
-            {isExpanded ? <ChevronDownIcon className="w-4 h-4" /> : <ChevronRightIcon className="w-4 h-4" />}
-          </button>
-          
-          <div className={`p-2 rounded-lg ${getSeverityColor(event.severity)}`}>
-            {getEventIcon(event.event_type)}
-          </div>
-          
+        <div className="flex items-center gap-3 flex-1">
+          {getEventIcon(event.event_type)}
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-1">
-              <h4 className="text-white font-medium">{event.event_type || 'Security Event'}</h4>
+              <h4 className="font-medium text-white">{event.event_type || 'Unknown Event'}</h4>
               <span className={`px-2 py-1 rounded-full text-xs font-medium ${getSeverityColor(event.severity)}`}>
                 {event.severity || 'Unknown'}
               </span>
             </div>
-            <p className="text-gray-400 text-sm">
-              Time: {event.timestamp || `${event.time_unit} hours ago`} • 
-              Count: {event.count || 1} events
+            <p className="text-sm text-gray-400 mb-2">
+              {event.description || 'No description available'}
             </p>
+            <div className="flex items-center gap-4 text-xs text-gray-500">
+              <span>Agent: {event.agent_id || 'Unknown'}</span>
+              <span>Source: {event.source || 'Unknown'}</span>
+              <span>{new Date(event.event_timestamp).toLocaleString()}</span>
+            </div>
           </div>
         </div>
-        
         <div className="flex items-center gap-2">
           <button
             onClick={() => onViewDetails(event)}
-            className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition-colors flex items-center gap-1"
+            className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition-colors"
           >
-            <EyeIcon className="w-4 h-4" />
             Details
+          </button>
+          <button
+            onClick={onToggleExpand}
+            className="p-1 text-gray-400 hover:text-white transition-colors"
+          >
+            {isExpanded ? '−' : '+'}
           </button>
         </div>
       </div>
       
       {isExpanded && (
-        <div className="mt-4 pl-8 border-l-2 border-blue-500/30">
+        <div className="mt-4 pt-4 border-t border-white/10">
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
               <span className="text-gray-400">Event ID:</span>
-              <span className="text-white ml-2">{event.id || `EVT-${Date.now()}`}</span>
+              <span className="text-white ml-2">{event.event_id || 'N/A'}</span>
             </div>
             <div>
-              <span className="text-gray-400">Source:</span>
-              <span className="text-white ml-2">{event.source || 'System'}</span>
+              <span className="text-gray-400">Category:</span>
+              <span className="text-white ml-2">{event.category || 'N/A'}</span>
             </div>
             <div>
-              <span className="text-gray-400">Agent:</span>
-              <span className="text-white ml-2">{event.agent_id || 'N/A'}</span>
+              <span className="text-gray-400">User:</span>
+              <span className="text-white ml-2">{event.user || 'N/A'}</span>
             </div>
             <div>
-              <span className="text-gray-400">Status:</span>
-              <span className="text-green-400 ml-2">{event.status || 'Logged'}</span>
+              <span className="text-gray-400">Process:</span>
+              <span className="text-white ml-2">{event.process_name || 'N/A'}</span>
+            </div>
+            <div className="col-span-2">
+              <span className="text-gray-400">Raw Data:</span>
+              <pre className="text-white ml-2 mt-1 text-xs bg-white/5 p-2 rounded overflow-x-auto">
+                {JSON.stringify(event.raw_data || {}, null, 2)}
+              </pre>
             </div>
           </div>
-          {event.description && (
-            <div className="mt-3">
-              <span className="text-gray-400">Description:</span>
-              <p className="text-white mt-1">{event.description}</p>
-            </div>
-          )}
         </div>
       )}
     </div>
   );
 };
 
-const FilterPanel = ({ filters, onFiltersChange, onApply, onReset }) => {
-  return (
-    <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl p-6">
-      <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-        <FunnelIcon className="w-5 h-5" />
-        Filters
-      </h3>
+const FilterPanel = ({ filters, onFiltersChange, onApply, onReset }) => (
+  <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl p-6">
+    <h3 className="text-lg font-semibold text-white mb-4">Filters</h3>
+    <div className="space-y-4">
+      <div>
+        <label className="block text-gray-300 text-sm mb-2">Event Type</label>
+        <select
+          value={filters.eventType}
+          onChange={(e) => onFiltersChange({ ...filters, eventType: e.target.value })}
+          className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white"
+        >
+          <option value="">All Types</option>
+          <option value="threat">Threat</option>
+          <option value="authentication">Authentication</option>
+          <option value="file">File</option>
+          <option value="network">Network</option>
+          <option value="process">Process</option>
+        </select>
+      </div>
+      
+      <div>
+        <label className="block text-gray-300 text-sm mb-2">Severity</label>
+        <select
+          value={filters.severity}
+          onChange={(e) => onFiltersChange({ ...filters, severity: e.target.value })}
+          className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white"
+        >
+          <option value="">All Severities</option>
+          <option value="critical">Critical</option>
+          <option value="high">High</option>
+          <option value="medium">Medium</option>
+          <option value="low">Low</option>
+        </select>
+      </div>
+      
+      <div>
+        <label className="block text-gray-300 text-sm mb-2">Time Range</label>
+        <select
+          value={filters.timeRange}
+          onChange={(e) => onFiltersChange({ ...filters, timeRange: e.target.value })}
+          className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white"
+        >
+          <option value="1">Last Hour</option>
+          <option value="6">Last 6 Hours</option>
+          <option value="24">Last 24 Hours</option>
+          <option value="48">Last 48 Hours</option>
+          <option value="72">Last 72 Hours</option>
+        </select>
+      </div>
+      
+      <div className="flex gap-2 pt-4">
+        <button
+          onClick={onApply}
+          className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+        >
+          Apply
+        </button>
+        <button
+          onClick={onReset}
+          className="flex-1 px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors"
+        >
+          Reset
+        </button>
+      </div>
+    </div>
+  </div>
+);
+
+const EventDetailModal = ({ event, onClose }) => (
+  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div className="bg-gray-800 rounded-xl p-6 w-full max-w-2xl max-h-[80vh] overflow-y-auto">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-xl font-semibold text-white">Event Details</h3>
+        <button
+          onClick={onClose}
+          className="text-gray-400 hover:text-white"
+        >
+          ×
+        </button>
+      </div>
       
       <div className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">Event Type</label>
-          <select
-            value={filters.eventType}
-            onChange={(e) => onFiltersChange({ ...filters, eventType: e.target.value })}
-            className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white"
-          >
-            <option value="">All Types</option>
-            <option value="threat">Threat</option>
-            <option value="security">Security</option>
-            <option value="system">System</option>
-            <option value="network">Network</option>
-          </select>
-        </div>
-        
-        <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">Severity</label>
-          <select
-            value={filters.severity}
-            onChange={(e) => onFiltersChange({ ...filters, severity: e.target.value })}
-            className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white"
-          >
-            <option value="">All Severities</option>
-            <option value="critical">Critical</option>
-            <option value="high">High</option>
-            <option value="medium">Medium</option>
-            <option value="low">Low</option>
-          </select>
-        </div>
-        
-        <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">Time Range</label>
-          <select
-            value={filters.timeRange}
-            onChange={(e) => onFiltersChange({ ...filters, timeRange: e.target.value })}
-            className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white"
-          >
-            <option value="1">Last 1 hour</option>
-            <option value="6">Last 6 hours</option>
-            <option value="24">Last 24 hours</option>
-            <option value="48">Last 48 hours</option>
-            <option value="72">Last 72 hours</option>
-          </select>
-        </div>
-        
-        <div className="flex gap-2 pt-4">
-          <button
-            onClick={onApply}
-            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg transition-colors"
-          >
-            Apply
-          </button>
-          <button
-            onClick={onReset}
-            className="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-2 rounded-lg transition-colors"
-          >
-            Reset
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const EventDetailModal = ({ event, onClose }) => {
-  if (!event) return null;
-
-  return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-slate-900 border border-white/20 rounded-2xl p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold text-white">Event Details</h2>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-white transition-colors"
-          >
-            ×
-          </button>
-        </div>
-        
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-gray-400 text-sm">Event Type</label>
-              <p className="text-white font-medium">{event.event_type}</p>
-            </div>
-            <div>
-              <label className="text-gray-400 text-sm">Severity</label>
-              <p className="text-white font-medium">{event.severity}</p>
-            </div>
-            <div>
-              <label className="text-gray-400 text-sm">Timestamp</label>
-              <p className="text-white font-medium">{event.timestamp || 'N/A'}</p>
-            </div>
-            <div>
-              <label className="text-gray-400 text-sm">Count</label>
-              <p className="text-white font-medium">{event.count}</p>
-            </div>
-          </div>
-          
+        <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="text-gray-400 text-sm">Raw Log Data</label>
-            <div className="mt-2 bg-black/50 rounded-lg p-4 font-mono text-sm text-green-400">
-              <pre className="whitespace-pre-wrap">
-{`{
-  "event_id": "${event.id || `EVT-${Date.now()}`}",
-  "timestamp": "${new Date().toISOString()}",
-  "event_type": "${event.event_type}",
-  "severity": "${event.severity}",
-  "source": "${event.source || 'system'}",
-  "agent_id": "${event.agent_id || 'N/A'}",
-  "count": ${event.count || 1},
-  "metadata": {
-    "time_unit": "${event.time_unit}",
-    "processed_at": "${new Date().toISOString()}",
-    "status": "logged"
-  }
-}`}
-              </pre>
-            </div>
+            <span className="text-gray-400 text-sm">Event ID:</span>
+            <p className="text-white">{event.event_id || 'N/A'}</p>
+          </div>
+          <div>
+            <span className="text-gray-400 text-sm">Event Type:</span>
+            <p className="text-white">{event.event_type || 'N/A'}</p>
+          </div>
+          <div>
+            <span className="text-gray-400 text-sm">Severity:</span>
+            <p className="text-white">{event.severity || 'N/A'}</p>
+          </div>
+          <div>
+            <span className="text-gray-400 text-sm">Timestamp:</span>
+            <p className="text-white">{new Date(event.event_timestamp).toLocaleString()}</p>
+          </div>
+          <div>
+            <span className="text-gray-400 text-sm">Agent ID:</span>
+            <p className="text-white">{event.agent_id || 'N/A'}</p>
+          </div>
+          <div>
+            <span className="text-gray-400 text-sm">Source:</span>
+            <p className="text-white">{event.source || 'N/A'}</p>
           </div>
         </div>
+        
+        <div>
+          <span className="text-gray-400 text-sm">Description:</span>
+          <p className="text-white mt-1">{event.description || 'No description available'}</p>
+        </div>
+        
+        <div>
+          <span className="text-gray-400 text-sm">Raw Data:</span>
+          <pre className="text-white mt-1 text-sm bg-white/5 p-3 rounded overflow-x-auto">
+            {JSON.stringify(event.raw_data || {}, null, 2)}
+          </pre>
+        </div>
+      </div>
+      
+      <div className="flex gap-3 pt-4">
+        <button
+          onClick={onClose}
+          className="flex-1 px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors"
+        >
+          Close
+        </button>
+        <button className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
+          Investigate
+        </button>
       </div>
     </div>
-  );
-};
+  </div>
+);
 
-export const Events = () => {
+const Events = () => {
   const [eventsData, setEventsData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [expandedEvents, setExpandedEvents] = useState(new Set());
-  const [selectedEvent, setSelectedEvent] = useState(null);
   const [filters, setFilters] = useState({
     eventType: '',
     severity: '',
     timeRange: '24'
   });
+  const [expandedEvents, setExpandedEvents] = useState(new Set());
+  const [selectedEvent, setSelectedEvent] = useState(null);
 
   const fetchData = async () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await fetchEventsTimeline(filters.timeRange, 'hour');
+      
+      const params = {
+        hours: parseInt(filters.timeRange),
+        limit: 100,
+        ...filters
+      };
+      
+      const data = await apiService.getEvents(params);
       setEventsData(data);
     } catch (err) {
       setError(err.message);
@@ -469,3 +480,5 @@ export const Events = () => {
     </div>
   );
 };
+
+export default Events;
