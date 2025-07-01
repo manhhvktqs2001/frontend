@@ -8,11 +8,11 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 5173,
-    host: true,
+    host: 'localhost',
     proxy: {
       // Proxy API calls to EDR backend server
       '/api': {
-        target: 'http://192.168.20.85:5000',
+        target: 'http://localhost:5000',
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path.replace(/^\/api/, '/api'),
@@ -27,12 +27,6 @@ export default defineConfig({
             console.log('Received Response from the Target:', proxyRes.statusCode, req.url);
           });
         },
-      },
-      // Proxy WebSocket connections for real-time updates
-      '/ws': {
-        target: 'ws://192.168.20.85:5000',
-        ws: true,
-        changeOrigin: true,
       }
     },
     // Disable HMR for better stability during development
@@ -61,7 +55,7 @@ export default defineConfig({
     port: 4173,
     proxy: {
       '/api': {
-        target: 'http://192.168.20.85:5000',
+        target: 'http://localhost:5000',
         changeOrigin: true,
         secure: false,
       }

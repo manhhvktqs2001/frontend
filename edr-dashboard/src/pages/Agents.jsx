@@ -2,13 +2,7 @@
 // Updated Agents component with real API integration
 
 import React, { useState, useEffect } from 'react';
-import { 
-  fetchAgentsOverview, 
-  fetchAgentsList, 
-  fetchAgentDetails,
-  fetchAgentEvents,
-  updateAgentConfig
-} from '../services/api';
+import apiService from '../services/api';
 import {
   ComputerDesktopIcon,
   MagnifyingGlassIcon,
@@ -421,10 +415,10 @@ const Agents = () => {
   // Fetch agents overview data
   const fetchOverviewData = async () => {
     try {
-      const data = await fetchAgentsOverview();
+      const data = await apiService.getAgentsOverview();
       setAgentsData(data);
     } catch (err) {
-      console.error('Failed to fetch agents overview:', err);
+      console.error('Error fetching agents overview:', err);
     }
   };
 
@@ -432,20 +426,16 @@ const Agents = () => {
   const fetchAgentsData = async (page = 1, searchTerm = '', appliedFilters = {}) => {
     try {
       setLoading(true);
-      setError(null);
-      
       const queryFilters = {
         ...appliedFilters,
-        search: searchTerm
+        ...(searchTerm && { search: searchTerm })
       };
 
-      const data = await fetchAgentsList(page, 20, queryFilters);
+      const data = await apiService.getAgentsList(page, 20, queryFilters);
       setAgentsList(data.agents || data.data || []);
       setTotalPages(data.total_pages || Math.ceil((data.total || 0) / 20));
-      setCurrentPage(page);
     } catch (err) {
-      setError(err.message);
-      console.error('Failed to fetch agents data:', err);
+      console.error('Error fetching agents:', err);
     } finally {
       setLoading(false);
     }
@@ -454,16 +444,13 @@ const Agents = () => {
   // Fetch agent details and events
   const handleViewDetails = async (agent) => {
     setSelectedAgent(agent);
-    setEventsLoading(true);
+    setShowDetailsModal(true);
     
     try {
-      const events = await fetchAgentEvents(agent.agent_id || agent.AgentID, 24);
+      const events = await apiService.getAgentEvents(agent.agent_id || agent.AgentID, 24);
       setAgentEvents(events.events || events.data || []);
     } catch (err) {
-      console.error('Failed to fetch agent events:', err);
-      setAgentEvents([]);
-    } finally {
-      setEventsLoading(false);
+      console.error('Error fetching agent events:', err);
     }
   };
 

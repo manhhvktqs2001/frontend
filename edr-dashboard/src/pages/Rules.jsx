@@ -39,7 +39,13 @@ const RuleCard = ({ rule, onEdit, onDelete, onToggle, onDuplicate, onView }) => 
   };
 
   const getStatusColor = (status) => {
-    return status ? 'text-green-400' : 'text-gray-400';
+    switch (status?.toLowerCase()) {
+      case 'active': return 'text-green-400';
+      case 'inactive': return 'text-gray-400';
+      case 'draft': return 'text-yellow-400';
+      case 'testing': return 'text-blue-400';
+      default: return status ? 'text-green-400' : 'text-gray-400';
+    }
   };
 
   return (

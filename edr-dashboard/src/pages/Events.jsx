@@ -246,7 +246,8 @@ const EventDetailModal = ({ event, onClose }) => (
 );
 
 const Events = () => {
-  const [eventsData, setEventsData] = useState(null);
+  const [events, setEvents] = useState([]);
+  const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -258,30 +259,23 @@ const Events = () => {
   const [expandedEvents, setExpandedEvents] = useState(new Set());
   const [selectedEvent, setSelectedEvent] = useState(null);
 
-  const fetchData = async () => {
+  const loadEventsData = async () => {
     try {
       setLoading(true);
-      setError(null);
-      
-      const params = {
-        hours: parseInt(filters.timeRange),
-        limit: 100,
-        ...filters
-      };
-      
-      const data = await apiService.getEvents(params);
-      setEventsData(data);
-    } catch (err) {
-      setError(err.message);
-      console.error('Failed to fetch events data:', err);
+      const data = await apiService.getEvents(filters.timeRange || 24, 100);
+      setEvents(data.events || []);
+      setTotalCount(data.total_count || 0);
+    } catch (error) {
+      console.error('Failed to load events:', error);
+      setError('Failed to load events data');
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchData();
-    const interval = setInterval(fetchData, 30000);
+    loadEventsData();
+    const interval = setInterval(loadEventsData, 30000);
     return () => clearInterval(interval);
   }, [filters.timeRange]);
 
@@ -300,7 +294,7 @@ const Events = () => {
   };
 
   const handleApplyFilters = () => {
-    fetchData();
+    loadEventsData();
   };
 
   const handleResetFilters = () => {
@@ -311,7 +305,7 @@ const Events = () => {
     });
   };
 
-  const filteredEvents = eventsData?.timeline?.filter(event => {
+  const filteredEvents = events?.filter(event => {
     if (searchQuery && !event.event_type?.toLowerCase().includes(searchQuery.toLowerCase())) {
       return false;
     }
@@ -342,7 +336,7 @@ const Events = () => {
           <div className="text-red-400 text-xl mb-2">⚠️ Error Loading Events</div>
           <div className="text-gray-400 mb-4">{error}</div>
           <button
-            onClick={fetchData}
+            onClick={loadEventsData}
             className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-colors"
           >
             Retry
@@ -362,7 +356,7 @@ const Events = () => {
         </div>
         <div className="flex items-center gap-4">
           <button
-            onClick={fetchData}
+            onClick={loadEventsData}
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-colors"
           >
             <ArrowPathIcon className="w-4 h-4" />
@@ -379,7 +373,7 @@ const Events = () => {
             <span className="text-lg font-semibold text-white">Total Events</span>
           </div>
           <div className="text-3xl font-bold text-blue-400">
-            {eventsData?.total_events?.toLocaleString() || 0}
+            {totalCount?.toLocaleString() || 0}
           </div>
         </div>
 
@@ -389,7 +383,7 @@ const Events = () => {
             <span className="text-lg font-semibold text-white">Threat Events</span>
           </div>
           <div className="text-3xl font-bold text-red-400">
-            {eventsData?.total_threats?.toLocaleString() || 0}
+            {(events?.filter(e => e.threat_level === 'malicious' || e.threat_level === 'suspicious')?.length || 0).toLocaleString()}
           </div>
         </div>
 
@@ -399,7 +393,7 @@ const Events = () => {
             <span className="text-lg font-semibold text-white">Events/Hour</span>
           </div>
           <div className="text-3xl font-bold text-green-400">
-            {Math.round((eventsData?.total_events || 0) / parseInt(filters.timeRange))}
+            {Math.round((totalCount || 0) / parseInt(filters.timeRange))}
           </div>
         </div>
 

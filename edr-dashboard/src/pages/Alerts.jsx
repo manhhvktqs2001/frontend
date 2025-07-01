@@ -2,13 +2,7 @@
 // Updated Alerts component with real API integration
 
 import React, { useState, useEffect } from 'react';
-import { 
-  fetchAlertsOverview, 
-  fetchAlertsList, 
-  fetchAlertDetails,
-  updateAlertStatus,
-  resolveAlert
-} from '../services/api';
+import apiService from '../services/api';
 import {
   ExclamationTriangleIcon,
   MagnifyingGlassIcon,
@@ -43,6 +37,7 @@ const AlertCard = ({ alert, onViewDetails, onUpdateStatus, onResolve }) => {
       case 'resolved': return 'text-green-400 bg-green-500/20';
       case 'false positive': return 'text-gray-400 bg-gray-500/20';
       case 'suppressed': return 'text-gray-400 bg-gray-500/20';
+      case 'closed': return 'text-gray-400 bg-gray-500/20';
       default: return 'text-blue-400 bg-blue-500/20';
     }
   };
@@ -436,8 +431,17 @@ const Alerts = () => {
   // Fetch alerts overview data
   const fetchOverviewData = async (timeRange = 24) => {
     try {
-      const data = await fetchAlertsOverview(timeRange);
-      setAlertsData(data);
+      const data = await apiService.getAlertsList(null, null, timeRange, 100);
+      setAlertsData({
+        summary: {
+          total_alerts: data.total_count || 0,
+          critical_alerts: data.critical_count || 0,
+          high_alerts: data.alerts?.filter(a => a.severity === 'High').length || 0,
+          medium_alerts: data.alerts?.filter(a => a.severity === 'Medium').length || 0,
+          low_alerts: data.alerts?.filter(a => a.severity === 'Low').length || 0,
+          open_alerts: data.open_count || 0
+        }
+      });
     } catch (err) {
       console.error('Failed to fetch alerts overview:', err);
     }
@@ -454,7 +458,7 @@ const Alerts = () => {
         search: searchTerm
       };
 
-      const data = await fetchAlertsList(page, 20, queryFilters);
+      const data = await apiService.getAlertsList(page, 20, queryFilters);
       setAlertsList(data.alerts || data.data || []);
       setTotalPages(data.total_pages || Math.ceil((data.total || 0) / 20));
       setCurrentPage(page);
@@ -469,7 +473,7 @@ const Alerts = () => {
   // Handle alert status update
   const handleUpdateStatus = async (alert, newStatus) => {
     try {
-      await updateAlertStatus(alert.AlertID || alert.alert_id, newStatus);
+      await apiService.updateAlertStatus(alert.AlertID || alert.alert_id, newStatus);
       // Refresh the alerts list
       fetchAlertsData(currentPage, searchQuery, filters);
       fetchOverviewData(parseInt(filters.timeRange));
@@ -481,10 +485,7 @@ const Alerts = () => {
   // Handle alert resolution
   const handleResolveAlert = async (alert) => {
     try {
-      await resolveAlert(alert.AlertID || alert.alert_id, {
-        resolution: 'Resolved by user',
-        resolved_by: 'Current User'
-      });
+      await apiService.updateAlertStatus(alert.AlertID || alert.alert_id, 'Resolved');
       // Refresh the alerts list
       fetchAlertsData(currentPage, searchQuery, filters);
       fetchOverviewData(parseInt(filters.timeRange));

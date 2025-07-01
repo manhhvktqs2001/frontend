@@ -6,24 +6,26 @@ const Threats = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [timeRange, setTimeRange] = useState(24);
+  const [threats, setThreats] = useState([]);
+  const [totalCount, setTotalCount] = useState(0);
 
-  const fetchData = async () => {
+  const loadThreatsData = async () => {
     try {
       setLoading(true);
-      setError(null);
-      const data = await apiService.getThreatsOverview();
-      setThreatsData(data);
-    } catch (err) {
-      setError(err.message);
-      console.error('Failed to fetch threats data:', err);
+      const data = await apiService.getThreatsList();
+      setThreats(data.threats || []);
+      setTotalCount(data.total_count || 0);
+    } catch (error) {
+      console.error('Failed to load threats:', error);
+      setError('Failed to load threats data');
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchData();
-    const interval = setInterval(fetchData, 30000);
+    loadThreatsData();
+    const interval = setInterval(loadThreatsData, 30000);
     return () => clearInterval(interval);
   }, [timeRange]);
 
@@ -44,7 +46,7 @@ const Threats = () => {
         <div className="text-center">
           <div className="text-red-400 text-xl mb-2">⚠️ Error Loading Threats</div>
           <div className="text-gray-400 mb-4">{error}</div>
-          <button onClick={fetchData} className="btn btn-primary">Retry</button>
+          <button onClick={loadThreatsData} className="btn btn-primary">Retry</button>
         </div>
       </div>
     );

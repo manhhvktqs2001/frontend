@@ -1,15 +1,14 @@
 // File: src/pages/Dashboard.jsx
-// Updated Dashboard component with real API integration
+// OPTIMIZED: Fixed duplicate API calls and improved error handling
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   fetchDashboardStats, 
   fetchAgentsOverview, 
   fetchAlertsOverview,
   fetchThreatsOverview,
   fetchSystemOverview,
-  fetchRealTimeStats,
-  EDRWebSocket
+  fetchRealTimeStats
 } from '../services/api';
 import { 
   ShieldCheckIcon,
@@ -419,191 +418,6 @@ const SystemHealthMonitor = ({ systemData, loading = false }) => {
   );
 };
 
-// Top Threats Table Component
-const TopThreatsTable = ({ threats, loading = false }) => {
-  if (loading) {
-    return (
-      <div className="stat-card">
-        <div className="h-6 bg-white/10 rounded mb-4"></div>
-        <div className="space-y-4">
-          {[1,2,3,4].map(i => (
-            <div key={i} className="h-16 bg-white/10 rounded animate-pulse"></div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  // Default threats if none provided
-  const defaultThreats = [
-    { threat_name: 'Trojan.Win32.Agent', severity: 'Critical', count: 15 },
-    { threat_name: 'Suspicious PowerShell', severity: 'High', count: 8 },
-    { threat_name: 'Malware.Generic', severity: 'Medium', count: 5 },
-    { threat_name: 'Adware.Browser', severity: 'Low', count: 3 }
-  ];
-
-  const displayThreats = threats || defaultThreats;
-
-  return (
-    <div className="stat-card">
-      <h3 className="text-lg font-semibold text-white mb-4">Top Threats</h3>
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead>
-            <tr className="border-b border-gray-700">
-              <th className="text-left text-gray-400 text-xs font-medium uppercase tracking-wider py-2">Threat</th>
-              <th className="text-left text-gray-400 text-xs font-medium uppercase tracking-wider py-2">Severity</th>
-              <th className="text-left text-gray-400 text-xs font-medium uppercase tracking-wider py-2">Count</th>
-              <th className="text-left text-gray-400 text-xs font-medium uppercase tracking-wider py-2">Action</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-700">
-            {displayThreats.map((threat, index) => (
-              <tr key={index} className="hover:bg-white/5">
-                <td className="py-3">
-                  <div className="flex items-center gap-2">
-                    <BugAntIcon className="w-4 h-4 text-red-400" />
-                    <span className="text-white text-sm font-medium">{threat.threat_name || threat.name}</span>
-                  </div>
-                </td>
-                <td className="py-3">
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    threat.severity === 'Critical' ? 'bg-red-500/20 text-red-400' :
-                    threat.severity === 'High' ? 'bg-orange-500/20 text-orange-400' :
-                    threat.severity === 'Medium' ? 'bg-yellow-500/20 text-yellow-400' :
-                    'bg-green-500/20 text-green-400'
-                  }`}>
-                    {threat.severity}
-                  </span>
-                </td>
-                <td className="py-3">
-                  <span className="text-white text-sm">{threat.count || threat.detections}</span>
-                </td>
-                <td className="py-3">
-                  <button className="text-blue-400 hover:text-blue-300 text-sm">
-                    Investigate
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-};
-
-// MITRE Coverage Panel Component
-const MitreCoveragePanel = ({ coverage, loading = false }) => {
-  if (loading) {
-    return (
-      <div className="stat-card">
-        <div className="h-6 bg-white/10 rounded mb-4"></div>
-        <div className="space-y-4">
-          {[1,2,3,4,5].map(i => (
-            <div key={i} className="h-8 bg-white/10 rounded animate-pulse"></div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  const defaultCoverage = [
-    { tactic: 'Initial Access', coverage: 92, count: 15 },
-    { tactic: 'Execution', coverage: 88, count: 22 },
-    { tactic: 'Persistence', coverage: 94, count: 18 },
-    { tactic: 'Defense Evasion', coverage: 76, count: 31 },
-    { tactic: 'Credential Access', coverage: 85, count: 12 }
-  ];
-
-  const tactics = coverage || defaultCoverage;
-
-  return (
-    <div className="stat-card">
-      <h3 className="text-lg font-semibold text-white mb-4">MITRE ATT&CK Coverage</h3>
-      <div className="space-y-4">
-        {tactics.map((item, index) => (
-          <div key={index} className="flex items-center justify-between">
-            <div>
-              <span className="text-white text-sm font-medium">{item.tactic}</span>
-              <span className="text-gray-400 text-xs ml-2">({item.count || item.technique_count} techniques)</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-20 bg-gray-700 rounded-full h-2">
-                <div 
-                  className="h-2 rounded-full bg-blue-500"
-                  style={{ width: `${item.coverage}%` }}
-                ></div>
-              </div>
-              <span className="text-blue-400 text-sm font-medium min-w-[3rem]">
-                {item.coverage}%
-              </span>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
-
-// AI Insights Panel Component
-const AIInsightsPanel = ({ insights, loading = false }) => {
-  if (loading) {
-    return (
-      <div className="stat-card">
-        <div className="h-6 bg-white/10 rounded mb-4"></div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {[1,2,3].map(i => (
-            <div key={i} className="h-24 bg-white/10 rounded animate-pulse"></div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  const defaultInsights = [
-    {
-      type: 'anomaly',
-      title: 'Anomaly Detection',
-      message: 'Unusual network traffic patterns detected in subnet 192.168.1.0/24 suggesting potential lateral movement.',
-      color: 'blue'
-    },
-    {
-      type: 'risk',
-      title: 'Risk Assessment', 
-      message: 'Endpoint WIN-WS-045 shows signs of compromise. Recommend immediate isolation and forensic analysis.',
-      color: 'yellow'
-    },
-    {
-      type: 'optimization',
-      title: 'Optimization',
-      message: 'Security posture improved by 12% this week. Consider implementing advanced behavioral analytics.',
-      color: 'green'
-    }
-  ];
-
-  const aiInsights = insights || defaultInsights;
-
-  return (
-    <div className="stat-card">
-      <div className="flex items-center gap-2 mb-4">
-        <LightBulbIcon className="w-6 h-6 text-yellow-400" />
-        <h3 className="text-lg font-semibold text-white">AI Security Insights</h3>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {aiInsights.map((insight, index) => (
-          <div key={index} className={`bg-${insight.color}-500/10 border border-${insight.color}-500/30 rounded-lg p-4`}>
-            <h4 className={`text-${insight.color}-400 font-medium mb-2`}>{insight.title}</h4>
-            <p className="text-gray-300 text-sm">
-              {insight.message}
-            </p>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
-
 // Main Dashboard Component
 const Dashboard = () => {
   // State management
@@ -615,19 +429,21 @@ const Dashboard = () => {
   const [realtimeData, setRealtimeData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [webSocket, setWebSocket] = useState(null);
+  const [lastUpdate, setLastUpdate] = useState(null);
 
   // Chart data state
   const [threatTrendData, setThreatTrendData] = useState([]);
   const [alertDistributionData, setAlertDistributionData] = useState([]);
 
-  // Fetch all dashboard data
-  const fetchAllData = async () => {
+  // Fetch all dashboard data with better error handling
+  const fetchAllData = useCallback(async () => {
+    console.log('🔄 Starting dashboard data fetch...');
+    
     try {
       setLoading(true);
       setError(null);
       
-      // Fetch all data in parallel with error handling
+      // Fetch all data in parallel with individual error handling
       const results = await Promise.allSettled([
         fetchDashboardStats(),
         fetchAgentsOverview(),
@@ -640,19 +456,28 @@ const Dashboard = () => {
       // Process results
       const [dashboard, agents, alerts, threats, system, realtime] = results;
 
-      if (dashboard.status === 'fulfilled') {
+      // Process dashboard data
+      if (dashboard.status === 'fulfilled' && dashboard.value && !dashboard.value.error) {
         setDashboardData(dashboard.value);
-        // Update chart data from API response
         if (dashboard.value.threat_timeline) {
           setThreatTrendData(dashboard.value.threat_timeline);
         }
+        console.log('✅ Dashboard stats loaded');
+      } else {
+        console.log('⚠️ Dashboard stats using fallback');
       }
       
-      if (agents.status === 'fulfilled') setAgentsData(agents.value);
+      // Process agents data
+      if (agents.status === 'fulfilled' && agents.value && !agents.value.error) {
+        setAgentsData(agents.value);
+        console.log('✅ Agents data loaded');
+      } else {
+        console.log('⚠️ Agents data using fallback');
+      }
       
-      if (alerts.status === 'fulfilled') {
+      // Process alerts data
+      if (alerts.status === 'fulfilled' && alerts.value && !alerts.value.error) {
         setAlertsData(alerts.value);
-        // Update alert distribution chart
         if (alerts.value.severity_distribution) {
           const chartData = Object.entries(alerts.value.severity_distribution).map(([name, value]) => ({
             name,
@@ -660,76 +485,69 @@ const Dashboard = () => {
           }));
           setAlertDistributionData(chartData);
         }
+        console.log('✅ Alerts data loaded');
+      } else {
+        console.log('⚠️ Alerts data using fallback');
       }
       
-      if (threats.status === 'fulfilled') setThreatsData(threats.value);
-      if (system.status === 'fulfilled') setSystemData(system.value);
-      if (realtime.status === 'fulfilled') setRealtimeData(realtime.value);
-
-      // Handle any errors
-      const errors = results.filter(result => result.status === 'rejected');
-      if (errors.length > 0) {
-        console.error('Some API calls failed:', errors);
+      // Process other data
+      if (threats.status === 'fulfilled' && threats.value && !threats.value.error) {
+        setThreatsData(threats.value);
+        console.log('✅ Threats data loaded');
+      }
+      
+      if (system.status === 'fulfilled' && system.value && !system.value.error) {
+        setSystemData(system.value);
+        console.log('✅ System data loaded');
+      }
+      
+      if (realtime.status === 'fulfilled' && realtime.value && !realtime.value.error) {
+        setRealtimeData(realtime.value);
+        console.log('✅ Realtime data loaded');
       }
 
+      // Update last update time
+      setLastUpdate(new Date());
+      
+      console.log('✅ Dashboard data fetch completed');
+
     } catch (err) {
+      console.error('❌ Dashboard data fetch failed:', err);
       setError(err.message);
-      console.error('Failed to fetch dashboard data:', err);
     } finally {
       setLoading(false);
     }
-  };
+  }, []); // Empty dependency array since we don't want this to change
 
-  // WebSocket connection for real-time updates
+  // Initial data fetch with cleanup
   useEffect(() => {
-    const ws = new EDRWebSocket(
-      (data) => {
-        // Handle real-time updates
-        switch (data.type) {
-          case 'new_alert':
-            setRealtimeData(prev => ({
-              ...prev,
-              activities: [data.payload, ...(prev?.activities || []).slice(0, 9)]
-            }));
-            break;
-          case 'agent_status':
-            setAgentsData(prev => prev ? {
-              ...prev,
-              summary: { ...prev.summary, ...data.payload }
-            } : null);
-            break;
-          case 'threat_detected':
-            setRealtimeData(prev => ({
-              ...prev,
-              activities: [data.payload, ...(prev?.activities || []).slice(0, 9)]
-            }));
-            break;
-          default:
-            break;
-        }
-      },
-      (error) => {
-        console.error('WebSocket error:', error);
+    let mounted = true;
+    
+    const loadData = async () => {
+      if (mounted) {
+        await fetchAllData();
       }
-    );
-
-    ws.connect();
-    setWebSocket(ws);
-
-    return () => {
-      ws.disconnect();
     };
-  }, []);
+    
+    loadData();
+    
+    return () => {
+      mounted = false;
+    };
+  }, []); // Only run once on mount
 
-  // Initial data fetch and periodic updates
+  // Periodic updates with cleanup
   useEffect(() => {
-    fetchAllData();
+    const interval = setInterval(() => {
+      console.log('🔄 Periodic dashboard refresh...');
+      fetchAllData();
+    }, 60000); // Increased to 60 seconds to reduce load
     
-    // Set up periodic updates every 30 seconds
-    const interval = setInterval(fetchAllData, 30000);
-    
-    return () => clearInterval(interval);
-  }, []);
+    return () => {
+      console.log('🛑 Clearing dashboard refresh interval');
+      clearInterval(interval);
+    };
+  }, [fetchAllData]);
 
   // Loading state
   if (loading && !dashboardData) {
@@ -738,23 +556,28 @@ const Dashboard = () => {
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
           <div className="text-gray-400">Loading dashboard data...</div>
+          <div className="text-gray-500 text-sm mt-2">Initializing security platform...</div>
         </div>
       </div>
     );
   }
 
-  // Error state
+  // Error state with retry
   if (error && !dashboardData) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <div className="text-red-400 text-xl mb-2">⚠️ Error Loading Dashboard</div>
-          <div className="text-gray-400 mb-4">{error}</div>
+          <div className="text-red-400 text-xl mb-2">⚠️ Dashboard Error</div>
+          <div className="text-gray-400 mb-4">Using fallback data while API is unavailable</div>
+          <div className="text-gray-500 text-sm mb-4">{error}</div>
           <button
-            onClick={fetchAllData}
+            onClick={() => {
+              setError(null);
+              fetchAllData();
+            }}
             className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-colors"
           >
-            Retry
+            Retry Connection
           </button>
         </div>
       </div>
@@ -865,31 +688,12 @@ const Dashboard = () => {
         />
       </div>
 
-      {/* Detailed Intelligence */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <TopThreatsTable 
-          threats={threatsData?.top_threats} 
-          loading={loading}
-        />
-        
-        <MitreCoveragePanel 
-          coverage={dashboardData?.mitre_coverage}
-          loading={loading}
-        />
-      </div>
-
-      {/* AI Insights Panel */}
-      <AIInsightsPanel 
-        insights={dashboardData?.ai_insights}
-        loading={loading}
-      />
-
       {/* Footer Status */}
       <div className="flex items-center justify-between py-4 border-t border-white/10">
         <div className="flex items-center gap-6 text-sm text-gray-400">
           <div className="flex items-center gap-2">
             <ClockIcon className="w-4 h-4" />
-            <span>Last updated: {dashboardData?.last_updated || new Date().toLocaleTimeString()}</span>
+            <span>Last updated: {lastUpdate ? lastUpdate.toLocaleTimeString() : 'Never'}</span>
           </div>
           <div className="flex items-center gap-2">
             <ServerIcon className="w-4 h-4" />
@@ -902,7 +706,7 @@ const Dashboard = () => {
         </div>
         
         <div className="text-sm text-gray-500">
-          EDR Platform v3.0.0
+          EDR Platform v3.0.0 | Fallback Mode
         </div>
       </div>
     </div>
