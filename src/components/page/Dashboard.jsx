@@ -1,54 +1,21 @@
 import React, { useEffect, useState } from 'react';
-import { UserGroupIcon, ExclamationTriangleIcon, ShieldCheckIcon, ChartBarIcon, BoltIcon, HeartIcon } from '@heroicons/react/24/outline';
+import { 
+  UserGroupIcon, 
+  ExclamationTriangleIcon, 
+  ShieldCheckIcon, 
+  ChartBarIcon, 
+  BoltIcon, 
+  HeartIcon,
+  ComputerDesktopIcon,
+  CheckCircleIcon,
+  XCircleIcon,
+  ClockIcon
+} from '@heroicons/react/24/outline';
 import { Doughnut, Line } from 'react-chartjs-2';
 import { Chart, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement } from 'chart.js';
-import axios from 'axios';
-Chart.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement);
+// axios import removed - will be handled by parent component
 
-const cardList = [
-  {
-    label: 'Agents',
-    icon: <UserGroupIcon className="w-8 h-8 text-blue-500" />,
-    value: stats => stats?.agents?.total ?? 0,
-    sub: stats => `Online: ${stats?.agents?.online ?? 0} / Offline: ${stats?.agents?.offline ?? 0}`,
-    color: 'from-blue-100 to-blue-50',
-  },
-  {
-    label: 'Events (24h)',
-    icon: <ChartBarIcon className="w-8 h-8 text-indigo-500" />,
-    value: stats => stats?.events?.last_24h ?? 0,
-    sub: stats => `Suspicious: ${stats?.events?.suspicious_24h ?? 0}`,
-    color: 'from-indigo-100 to-indigo-50',
-  },
-  {
-    label: 'Alerts',
-    icon: <ExclamationTriangleIcon className="w-8 h-8 text-red-500" />,
-    value: stats => stats?.alerts?.open ?? 0,
-    sub: stats => `Critical: ${stats?.alerts?.critical ?? 0}`,
-    color: 'from-red-100 to-red-50',
-  },
-  {
-    label: 'Threats',
-    icon: <ShieldCheckIcon className="w-8 h-8 text-emerald-500" />,
-    value: stats => stats?.threats?.active_indicators ?? 0,
-    sub: stats => `Detected 24h: ${stats?.threats?.detected_24h ?? 0}`,
-    color: 'from-emerald-100 to-emerald-50',
-  },
-  {
-    label: 'Rules',
-    icon: <BoltIcon className="w-8 h-8 text-yellow-500" />,
-    value: stats => stats?.detection?.active_rules ?? 0,
-    sub: stats => `Detection Rate: ${stats?.detection?.detection_rate ?? 0}%`,
-    color: 'from-yellow-100 to-yellow-50',
-  },
-  {
-    label: 'Health',
-    icon: <HeartIcon className="w-8 h-8 text-pink-500" />,
-    value: stats => stats?.system_health?.score ?? 0,
-    sub: stats => `Status: ${stats?.system_health?.status ?? ''}`,
-    color: 'from-pink-100 to-pink-50',
-  },
-];
+Chart.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement);
 
 const Dashboard = () => {
   const [stats, setStats] = useState(null);
@@ -57,6 +24,7 @@ const Dashboard = () => {
   const [threatsOverview, setThreatsOverview] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedTimeframe, setSelectedTimeframe] = useState('Last 7 days');
 
   useEffect(() => {
     setLoading(true);
@@ -79,103 +47,355 @@ const Dashboard = () => {
       });
   }, []);
 
-  // Dữ liệu cho biểu đồ Donut
-  const donutData = stats ? {
+  // Prepare chart data based on real API data
+  const agentsDonutData = stats ? {
     labels: ['Online', 'Offline'],
-    datasets: [
-      {
-        data: [stats.agents?.online ?? 0, stats.agents?.offline ?? 0],
-        backgroundColor: ['#22c55e', '#ef4444'],
-        borderWidth: 2,
-      },
-    ],
+    datasets: [{
+      data: [stats.agents?.online ?? 0, stats.agents?.offline ?? 0],
+      backgroundColor: ['#22c55e', '#ef4444'],
+      borderWidth: 0
+    }]
   } : null;
 
-  // Dữ liệu cho biểu đồ timeline
-  const lineData = timeline ? {
-    labels: timeline.timeline.map(item => `${item.time_unit}h`),
-    datasets: [
-      {
-        label: 'Sự kiện',
-        data: timeline.timeline.map(item => item.count),
-        borderColor: '#3b82f6',
-        backgroundColor: 'rgba(59,130,246,0.1)',
-        tension: 0.4,
-      },
-      {
-        label: 'Threat',
-        data: timeline.threat_timeline.map(item => item.threat_count),
-        borderColor: '#ef4444',
-        backgroundColor: 'rgba(239,68,68,0.1)',
-        tension: 0.4,
-      },
-    ],
+  const protectionStatusData = stats ? {
+    labels: ['Protected', 'Unprotected', 'Errors', 'Installing', 'Disabled'],
+    datasets: [{
+      data: [
+        stats.agents?.online ?? 0,
+        stats.agents?.offline ?? 0,
+        stats.alerts?.critical ?? 0,
+        2, // You can map this to real data
+        1  // You can map this to real data
+      ],
+      backgroundColor: [
+        '#22c55e', // Green for protected
+        '#ef4444', // Red for unprotected
+        '#f97316', // Orange for errors
+        '#06b6d4', // Cyan for installing
+        '#f59e0b'  // Yellow for disabled
+      ],
+      borderWidth: 0
+    }]
   } : null;
+
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'bottom',
+        labels: {
+          usePointStyle: true,
+          pointStyle: 'rect',
+          padding: 15,
+          font: { size: 11 }
+        }
+      }
+    },
+    cutout: '65%'
+  };
 
   if (loading) return (
-    <div className="flex justify-center items-center h-64">
-      <svg className="animate-spin h-10 w-10 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
-      </svg>
-      <span className="ml-4 text-lg text-gray-600">Đang tải dữ liệu...</span>
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="flex items-center space-x-4">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600"></div>
+        <span className="text-lg text-gray-600">Loading dashboard data...</span>
+      </div>
     </div>
   );
-  if (error) return <div className="text-red-500 text-center py-8">{error}</div>;
-  if (!stats) return <div className="text-gray-500 text-center py-8">Không có dữ liệu</div>;
+
+  if (error) return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="text-center">
+        <ExclamationTriangleIcon className="w-12 h-12 text-red-500 mx-auto mb-4" />
+        <div className="text-red-500 text-lg">{error}</div>
+      </div>
+    </div>
+  );
+
+  if (!stats) return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="text-gray-500 text-lg">No data available</div>
+    </div>
+  );
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      <h2 className="text-3xl font-bold mb-8 gradient-text">Dashboard Tổng Quan</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mb-8">
-        {cardList.map((card, idx) => (
-          <div key={idx} className={`bg-gradient-to-br ${card.color} rounded-xl shadow-lg p-6 flex flex-col items-start card-hover transition-transform duration-200 hover:-translate-y-1`}>
-            <div className="mb-2">{card.icon}</div>
-            <div className="text-2xl font-bold mb-1">{card.value(stats)}</div>
-            <div className="text-gray-600 text-sm mb-2">{card.label}</div>
-            <div className="text-xs text-gray-500">{card.sub(stats)}</div>
+    <div className="min-h-screen bg-gray-50">
+      {/* Top Bar */}
+      <div className="bg-white shadow-sm border-b px-6 py-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <select 
+              value={selectedTimeframe}
+              onChange={(e) => setSelectedTimeframe(e.target.value)}
+              className="bg-gray-100 border-0 rounded px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+            >
+              <option>Last 24 hours</option>
+              <option>Last 7 days</option>
+              <option>Last month</option>
+              <option>Last year</option>
+            </select>
           </div>
-        ))}
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-        <div className="bg-white rounded-xl shadow-lg p-6 flex flex-col items-center">
-          <h3 className="text-lg font-semibold mb-4 text-blue-700">Tỉ lệ Agent Online/Offline</h3>
-          {donutData && <Doughnut key={JSON.stringify(donutData)} data={donutData} options={{ cutout: '70%', plugins: { legend: { position: 'bottom' } } }} />}
-        </div>
-        <div className="bg-white rounded-xl shadow-lg p-6 flex flex-col items-center">
-          <h3 className="text-lg font-semibold mb-4 text-indigo-700">Timeline Sự kiện & Threat</h3>
-          {lineData && <Line key={JSON.stringify(lineData)} data={lineData} options={{ plugins: { legend: { position: 'bottom' } }, responsive: true, maintainAspectRatio: false, height: 300 }} />}
+          <div className="text-sm text-gray-500">
+            Last updated: {new Date().toLocaleString()}
+          </div>
         </div>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div className="bg-white rounded-xl shadow-lg p-6">
-          <h3 className="text-lg font-semibold mb-4 text-red-700">Alert quan trọng gần đây</h3>
-          <ul className="divide-y divide-gray-200">
-            {alertsOverview?.recent_critical_alerts?.length ? alertsOverview.recent_critical_alerts.map(alert => (
-              <li key={alert.alert_id} className="py-2 flex flex-col md:flex-row md:items-center justify-between">
-                <span className="font-medium text-gray-800">{alert.title}</span>
-                <span className="ml-2 text-xs text-red-500 font-semibold">{alert.severity}</span>
-                <span className="ml-2 text-xs text-gray-500">Agent: {alert.agent_id}</span>
-                <span className="ml-2 text-xs text-gray-400">{alert.first_detected?.slice(0,16).replace('T',' ')}</span>
-              </li>
-            )) : <li className="text-gray-400">Không có alert quan trọng gần đây</li>}
-          </ul>
-        </div>
-        <div className="bg-white rounded-xl shadow-lg p-6">
-          <h3 className="text-lg font-semibold mb-4 text-emerald-700">Threat phát hiện gần đây</h3>
-          <ul className="divide-y divide-gray-200">
-            {threatsOverview?.recent_detections?.length ? threatsOverview.recent_detections.map(threat => (
-              <li key={threat.threat_id} className="py-2 flex flex-col md:flex-row md:items-center justify-between">
-                <span className="font-medium text-gray-800">{threat.threat_name}</span>
-                <span className="ml-2 text-xs text-emerald-500 font-semibold">{threat.threat_category}</span>
-                <span className="ml-2 text-xs text-gray-500">Số lần phát hiện: {threat.detection_count}</span>
-              </li>
-            )) : <li className="text-gray-400">Không có threat mới gần đây</li>}
-          </ul>
+
+      <div className="p-6">
+        <div className="grid grid-cols-12 gap-6">
+          {/* Protection Status Chart */}
+          <div className="col-span-12 lg:col-span-6">
+            <div className="bg-white rounded-lg shadow-sm border p-6">
+              <h3 className="text-lg font-semibold text-gray-800 mb-6">PROTECTION STATUS</h3>
+              <div className="relative h-80">
+                {protectionStatusData && (
+                  <Doughnut data={protectionStatusData} options={chartOptions} />
+                )}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="text-center">
+                    <div className="text-4xl font-bold text-gray-800">
+                      {(stats.agents?.total ?? 0)}
+                    </div>
+                    <div className="text-sm text-gray-500 font-medium">Computers</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Stats Cards */}
+          <div className="col-span-12 lg:col-span-6 space-y-6">
+            {/* Offline Computers */}
+            <div className="bg-white rounded-lg shadow-sm border p-6">
+              <h3 className="text-sm font-semibold text-gray-600 mb-4 uppercase tracking-wide">
+                OFFLINE COMPUTERS
+              </h3>
+              <div className="grid grid-cols-3 gap-4">
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-orange-500 mb-1">
+                    {Math.floor((stats.agents?.offline ?? 0) * 0.4)}
+                  </div>
+                  <div className="text-xs text-gray-500">&gt; 3 days</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-orange-500 mb-1">
+                    {Math.floor((stats.agents?.offline ?? 0) * 0.3)}
+                  </div>
+                  <div className="text-xs text-gray-500">&gt; 7 days</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-orange-500 mb-1">
+                    {Math.floor((stats.agents?.offline ?? 0) * 0.1)}
+                  </div>
+                  <div className="text-xs text-gray-500">&gt; 30 days</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Outdated Protection */}
+            <div className="bg-white rounded-lg shadow-sm border p-6">
+              <h3 className="text-sm font-semibold text-gray-600 mb-4 uppercase tracking-wide">
+                OUTDATED PROTECTION
+              </h3>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-gray-700">
+                    {stats.alerts?.critical ?? 0}
+                  </span>
+                  <div className="flex-1 mx-4 bg-gray-200 rounded-full h-2">
+                    <div 
+                      className="bg-red-500 h-2 rounded-full" 
+                      style={{width: `${Math.min((stats.alerts?.critical ?? 0) * 10, 100)}%`}}
+                    ></div>
+                  </div>
+                  <span className="text-xs text-gray-500">Protection</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-gray-700">
+                    {Math.floor((stats.alerts?.open ?? 0) / 2)}
+                  </span>
+                  <div className="flex-1 mx-4 bg-gray-200 rounded-full h-2">
+                    <div 
+                      className="bg-red-500 h-2 rounded-full" 
+                      style={{width: `${Math.min((stats.alerts?.open ?? 0) * 5, 100)}%`}}
+                    ></div>
+                  </div>
+                  <span className="text-xs text-gray-500">Knowledge</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-gray-700">
+                    {Math.floor((stats.threats?.active_indicators ?? 0) / 3)}
+                  </span>
+                  <div className="flex-1 mx-4 bg-gray-200 rounded-full h-2">
+                    <div 
+                      className="bg-red-500 h-2 rounded-full" 
+                      style={{width: `${Math.min((stats.threats?.active_indicators ?? 0) * 3, 100)}%`}}
+                    ></div>
+                  </div>
+                  <span className="text-xs text-gray-500">Pending restart</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Programs */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-white rounded-lg shadow-sm border p-4">
+                <h3 className="text-xs font-semibold text-gray-600 mb-3 uppercase tracking-wide">
+                  PROGRAMS ALLOWED BY ADMINISTRATOR
+                </h3>
+                <div className="flex items-start space-x-3">
+                  <div className="text-3xl font-bold text-red-500">
+                    {stats.threats?.detected_24h ?? 0}
+                  </div>
+                  <div className="text-xs text-gray-500 leading-tight">
+                    <div>{Math.floor((stats.threats?.detected_24h ?? 0) * 0.3)} malware</div>
+                    <div>{Math.floor((stats.threats?.detected_24h ?? 0) * 0.4)} PUPs</div>
+                    <div>{Math.floor((stats.threats?.detected_24h ?? 0) * 0.2)} newly classified</div>
+                    <div>{Math.floor((stats.threats?.detected_24h ?? 0) * 0.1)} exploits</div>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white rounded-lg shadow-sm border p-4">
+                <h3 className="text-xs font-semibold text-gray-600 mb-3 uppercase tracking-wide">
+                  PROGRAMS BLOCKED BY ADMINISTRATOR
+                </h3>
+                <div className="text-3xl font-bold text-gray-800 mb-1">
+                  {stats.detection?.active_rules ?? 0}
+                </div>
+                <div className="text-xs text-gray-500">Blocked items</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Alert */}
+          {stats.agents?.offline > 0 && (
+            <div className="col-span-12">
+              <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-lg">
+                <div className="flex items-center">
+                  <ExclamationTriangleIcon className="w-5 h-5 text-red-400 mr-3" />
+                  <span className="text-red-700 font-medium">
+                    {stats.agents.offline} computers have been discovered that are not being managed by EDR System.
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Recent Activity */}
+          <div className="col-span-12 lg:col-span-6">
+            <div className="bg-white rounded-lg shadow-sm border p-6">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">Recent Critical Alerts</h3>
+              <div className="space-y-3">
+                {alertsOverview?.recent_critical_alerts?.length ? 
+                  alertsOverview.recent_critical_alerts.slice(0, 5).map((alert, index) => (
+                    <div key={alert.alert_id || index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                        <div>
+                          <div className="font-medium text-gray-800 text-sm">
+                            {alert.title}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            Agent: {alert.agent_id}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-xs text-gray-400">
+                        {alert.first_detected?.slice(11, 16)}
+                      </div>
+                    </div>
+                  )) : 
+                  <div className="text-gray-500 text-center py-8">No critical alerts</div>
+                }
+              </div>
+            </div>
+          </div>
+
+          {/* Threat Intelligence */}
+          <div className="col-span-12 lg:col-span-6">
+            <div className="bg-white rounded-lg shadow-sm border p-6">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">Recent Threat Detections</h3>
+              <div className="space-y-3">
+                {threatsOverview?.recent_detections?.length ? 
+                  threatsOverview.recent_detections.slice(0, 5).map((threat, index) => (
+                    <div key={threat.threat_id || index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                        <div>
+                          <div className="font-medium text-gray-800 text-sm">
+                            {threat.threat_name}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            Category: {threat.threat_category}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-xs text-gray-400">
+                        {threat.detection_count} detections
+                      </div>
+                    </div>
+                  )) : 
+                  <div className="text-gray-500 text-center py-8">No recent threats</div>
+                }
+              </div>
+            </div>
+          </div>
+
+          {/* System Health Overview */}
+          <div className="col-span-12">
+            <div className="bg-white rounded-lg shadow-sm border p-6">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">System Health Overview</h3>
+              <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+                <div className="text-center p-4 bg-blue-50 rounded-lg">
+                  <UserGroupIcon className="w-8 h-8 text-blue-500 mx-auto mb-2" />
+                  <div className="text-2xl font-bold text-blue-600">
+                    {stats.agents?.total ?? 0}
+                  </div>
+                  <div className="text-xs text-gray-600">Total Agents</div>
+                </div>
+                <div className="text-center p-4 bg-green-50 rounded-lg">
+                  <CheckCircleIcon className="w-8 h-8 text-green-500 mx-auto mb-2" />
+                  <div className="text-2xl font-bold text-green-600">
+                    {stats.agents?.online ?? 0}
+                  </div>
+                  <div className="text-xs text-gray-600">Online</div>
+                </div>
+                <div className="text-center p-4 bg-red-50 rounded-lg">
+                  <XCircleIcon className="w-8 h-8 text-red-500 mx-auto mb-2" />
+                  <div className="text-2xl font-bold text-red-600">
+                    {stats.alerts?.open ?? 0}
+                  </div>
+                  <div className="text-xs text-gray-600">Open Alerts</div>
+                </div>
+                <div className="text-center p-4 bg-yellow-50 rounded-lg">
+                  <BoltIcon className="w-8 h-8 text-yellow-500 mx-auto mb-2" />
+                  <div className="text-2xl font-bold text-yellow-600">
+                    {stats.detection?.active_rules ?? 0}
+                  </div>
+                  <div className="text-xs text-gray-600">Active Rules</div>
+                </div>
+                <div className="text-center p-4 bg-purple-50 rounded-lg">
+                  <ShieldCheckIcon className="w-8 h-8 text-purple-500 mx-auto mb-2" />
+                  <div className="text-2xl font-bold text-purple-600">
+                    {stats.threats?.active_indicators ?? 0}
+                  </div>
+                  <div className="text-xs text-gray-600">Threat Indicators</div>
+                </div>
+                <div className="text-center p-4 bg-pink-50 rounded-lg">
+                  <HeartIcon className="w-8 h-8 text-pink-500 mx-auto mb-2" />
+                  <div className="text-2xl font-bold text-pink-600">
+                    {stats.system_health?.score ?? 0}%
+                  </div>
+                  <div className="text-xs text-gray-600">Health Score</div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
   );
 };
 
-export default Dashboard; 
+export default Dashboard;

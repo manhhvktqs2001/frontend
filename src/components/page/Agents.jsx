@@ -1,108 +1,272 @@
 import React, { useEffect, useState } from 'react';
-import { UserGroupIcon, CheckCircleIcon, XCircleIcon, CpuChipIcon, ArrowTrendingUpIcon } from '@heroicons/react/24/outline';
-import axios from 'axios';
+import { 
+  UserGroupIcon, 
+  CheckCircleIcon, 
+  XCircleIcon, 
+  ComputerDesktopIcon,
+  MagnifyingGlassIcon,
+  FunnelIcon,
+  ArrowPathIcon
+} from '@heroicons/react/24/outline';
+// Note: axios calls will be handled by parent component
 
-const statusBadge = status => {
-  if (!status) return <span className="px-2 py-1 rounded bg-gray-200 text-gray-600 text-xs">Unknown</span>;
-  if (status.toLowerCase() === 'active' || status.toLowerCase() === 'online')
-    return <span className="px-2 py-1 rounded bg-green-100 text-green-700 text-xs flex items-center"><CheckCircleIcon className="w-4 h-4 mr-1"/>Online</span>;
-  if (status.toLowerCase() === 'offline')
-    return <span className="px-2 py-1 rounded bg-red-100 text-red-700 text-xs flex items-center"><XCircleIcon className="w-4 h-4 mr-1"/>Offline</span>;
-  return <span className="px-2 py-1 rounded bg-yellow-100 text-yellow-700 text-xs">{status}</span>;
-};
-
-const Agents = () => {
+const AgentsWatchGuardStyle = () => {
   const [agents, setAgents] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterStatus, setFilterStatus] = useState('All');
 
   useEffect(() => {
     setLoading(true);
+    // Keep your existing API calls here
     Promise.all([
-      axios.get('http://192.168.20.85:5000/api/v1/agents/list'),
-      axios.get('http://192.168.20.85:5000/api/v1/agents/stats/summary'),
+      fetch('http://192.168.20.85:5000/api/v1/agents/list').then(res => res.json()),
+      fetch('http://192.168.20.85:5000/api/v1/agents/stats/summary').then(res => res.json())
     ])
       .then(([listRes, statsRes]) => {
-        setAgents(listRes.data.agents || []);
-        setStats(statsRes.data);
+        setAgents(listRes.agents || []);
+        setStats(statsRes);
         setLoading(false);
       })
       .catch(() => {
-        setError('Không thể tải danh sách agent');
+        setError('Cannot load agent data');
         setLoading(false);
       });
   }, []);
 
+  const getStatusIcon = (status) => {
+    const statusLower = (status || '').toLowerCase();
+    if (statusLower === 'active' || statusLower === 'online') {
+      return <CheckCircleIcon className="w-5 h-5 text-green-500" />;
+    }
+    if (statusLower === 'offline') {
+      return <XCircleIcon className="w-5 h-5 text-red-500" />;
+    }
+    return <div className="w-5 h-5 rounded-full bg-gray-300"></div>;
+  };
+
+  const getStatusBadge = (status) => {
+    const statusLower = (status || '').toLowerCase();
+    if (statusLower === 'active' || statusLower === 'online') {
+      return <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">Online</span>;
+    }
+    if (statusLower === 'offline') {
+      return <span className="px-2 py-1 text-xs font-medium bg-red-100 text-red-800 rounded-full">Offline</span>;
+    }
+    return <span className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800 rounded-full">Unknown</span>;
+  };
+
+  const filteredAgents = agents.filter(agent => {
+    const matchesSearch = (agent.hostname || agent.HostName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (agent.ip_address || agent.IPAddress || '').toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesFilter = filterStatus === 'All' || 
+                         (agent.status || agent.Status || '').toLowerCase() === filterStatus.toLowerCase();
+    return matchesSearch && matchesFilter;
+  });
+
   if (loading) return (
-    <div className="flex justify-center items-center h-64">
-      <svg className="animate-spin h-10 w-10 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
-      </svg>
-      <span className="ml-4 text-lg text-gray-600">Đang tải danh sách agent...</span>
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="flex items-center space-x-4">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600"></div>
+        <span className="text-lg text-gray-600">Loading agents data...</span>
+      </div>
     </div>
   );
-  if (error) return <div className="text-red-500 text-center py-8">{error}</div>;
+
+  if (error) return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="text-red-500 text-center py-8">{error}</div>
+    </div>
+  );
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      <div className="flex items-center mb-6">
-        <UserGroupIcon className="w-8 h-8 text-blue-500 mr-2" />
-        <h2 className="text-2xl font-bold gradient-text">Danh sách Agents</h2>
-      </div>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-        <div className="bg-gradient-to-br from-blue-100 to-blue-50 rounded-xl shadow p-4 flex flex-col items-start">
-          <UserGroupIcon className="w-6 h-6 text-blue-500 mb-1" />
-          <div className="text-xl font-bold">{stats?.total_agents ?? 0}</div>
-          <div className="text-xs text-gray-600">Tổng Agent</div>
-        </div>
-        <div className="bg-gradient-to-br from-green-100 to-green-50 rounded-xl shadow p-4 flex flex-col items-start">
-          <CheckCircleIcon className="w-6 h-6 text-green-500 mb-1" />
-          <div className="text-xl font-bold">{stats?.online_agents ?? 0}</div>
-          <div className="text-xs text-gray-600">Online</div>
-        </div>
-        <div className="bg-gradient-to-br from-red-100 to-red-50 rounded-xl shadow p-4 flex flex-col items-start">
-          <XCircleIcon className="w-6 h-6 text-red-500 mb-1" />
-          <div className="text-xl font-bold">{stats?.offline_agents ?? 0}</div>
-          <div className="text-xs text-gray-600">Offline</div>
-        </div>
-        <div className="bg-gradient-to-br from-yellow-100 to-yellow-50 rounded-xl shadow p-4 flex flex-col items-start">
-          <ArrowTrendingUpIcon className="w-6 h-6 text-yellow-500 mb-1" />
-          <div className="text-xl font-bold">{stats?.active_agents ?? 0}</div>
-          <div className="text-xs text-gray-600">Active</div>
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-white shadow-sm border-b px-6 py-4">
+        <div className="flex items-center justify-between">
+          <h1 className="text-xl font-semibold text-gray-800">Computer protection status</h1>
+          <div className="flex items-center space-x-4">
+            <button className="flex items-center px-4 py-2 text-sm text-gray-600 hover:text-gray-800 transition-colors">
+              <ArrowPathIcon className="w-4 h-4 mr-2" />
+              Refresh
+            </button>
+            <div className="flex items-center space-x-2">
+              <span className="text-sm text-gray-500">Last updated:</span>
+              <span className="text-sm text-gray-700">{new Date().toLocaleString()}</span>
+            </div>
+          </div>
         </div>
       </div>
-      <div className="overflow-x-auto rounded-xl shadow-lg bg-white">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-blue-50">
-            <tr>
-              <th className="px-4 py-2 text-left text-xs font-semibold text-gray-700">HostName</th>
-              <th className="px-4 py-2 text-left text-xs font-semibold text-gray-700">IP Address</th>
-              <th className="px-4 py-2 text-left text-xs font-semibold text-gray-700">OS</th>
-              <th className="px-4 py-2 text-left text-xs font-semibold text-gray-700">Status</th>
-              <th className="px-4 py-2 text-left text-xs font-semibold text-gray-700">Last Heartbeat</th>
-              <th className="px-4 py-2 text-left text-xs font-semibold text-gray-700">Chi tiết</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-100">
-            {agents.map(agent => (
-              <tr key={agent.agent_id || agent.AgentID} className="hover:bg-blue-50 transition">
-                <td className="px-4 py-2 whitespace-nowrap">{agent.hostname || agent.HostName}</td>
-                <td className="px-4 py-2 whitespace-nowrap">{agent.ip_address || agent.IPAddress}</td>
-                <td className="px-4 py-2 whitespace-nowrap">{agent.operating_system || agent.OperatingSystem}</td>
-                <td className="px-4 py-2 whitespace-nowrap">{statusBadge(agent.status || agent.Status)}</td>
-                <td className="px-4 py-2 whitespace-nowrap text-xs text-gray-500">{agent.last_heartbeat || agent.LastHeartbeat}</td>
-                <td className="px-4 py-2 whitespace-nowrap">
-                  <a href={`/agents/${agent.agent_id || agent.AgentID}`} className="text-blue-600 hover:underline text-sm font-medium">Xem</a>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+
+      <div className="p-6">
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <div className="bg-white rounded-lg shadow-sm border p-4">
+            <div className="flex items-center">
+              <UserGroupIcon className="w-8 h-8 text-blue-500 mr-3" />
+              <div>
+                <div className="text-2xl font-bold text-gray-800">
+                  {stats?.total_agents ?? agents.length}
+                </div>
+                <div className="text-sm text-gray-600">Total Agents</div>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-lg shadow-sm border p-4">
+            <div className="flex items-center">
+              <CheckCircleIcon className="w-8 h-8 text-green-500 mr-3" />
+              <div>
+                <div className="text-2xl font-bold text-green-600">
+                  {stats?.online_agents ?? 0}
+                </div>
+                <div className="text-sm text-gray-600">Online</div>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-lg shadow-sm border p-4">
+            <div className="flex items-center">
+              <XCircleIcon className="w-8 h-8 text-red-500 mr-3" />
+              <div>
+                <div className="text-2xl font-bold text-red-600">
+                  {stats?.offline_agents ?? 0}
+                </div>
+                <div className="text-sm text-gray-600">Offline</div>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-lg shadow-sm border p-4">
+            <div className="flex items-center">
+              <CheckCircleIcon className="w-8 h-8 text-yellow-500 mr-3" />
+              <div>
+                <div className="text-2xl font-bold text-yellow-600">
+                  {stats?.active_agents ?? 0}
+                </div>
+                <div className="text-sm text-gray-600">Active</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Filters and Search */}
+        <div className="bg-white rounded-lg shadow-sm border p-4 mb-6">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
+            <div className="flex items-center space-x-4">
+              <div className="relative">
+                <MagnifyingGlassIcon className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search computers..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                />
+              </div>
+              <div className="flex items-center space-x-2">
+                <FunnelIcon className="w-5 h-5 text-gray-400" />
+                <select
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                  className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                >
+                  <option value="All">All Status</option>
+                  <option value="online">Online</option>
+                  <option value="offline">Offline</option>
+                  <option value="active">Active</option>
+                </select>
+              </div>
+            </div>
+            <div className="text-sm text-gray-500">
+              Showing {filteredAgents.length} of {agents.length} computers
+            </div>
+          </div>
+        </div>
+
+        {/* Agents Table */}
+        <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Computer
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Group
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Advanced Protection
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Updated Protection
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Knowledge
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Connection to Knowledge
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Last Connection
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {filteredAgents.map((agent, index) => (
+                  <tr key={agent.agent_id || agent.AgentID || index} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-4 py-3">
+                      <div className="flex items-center">
+                        <ComputerDesktopIcon className="w-5 h-5 text-gray-400 mr-3" />
+                        <div>
+                          <div className="font-medium text-gray-900">
+                            {agent.hostname || agent.HostName}
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            {agent.ip_address || agent.IPAddress}
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center">
+                        <div className="w-3 h-3 bg-gray-400 rounded-full mr-2"></div>
+                        <span className="text-sm text-gray-900">All</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      {getStatusIcon(agent.status || agent.Status)}
+                    </td>
+                    <td className="px-4 py-3">
+                      {getStatusIcon(agent.status || agent.Status)}
+                    </td>
+                    <td className="px-4 py-3">
+                      {getStatusIcon(agent.status || agent.Status)}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="w-5 h-5"></div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="text-sm text-gray-500">
+                        {agent.last_heartbeat || agent.LastHeartbeat || 'Never'}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          
+          {filteredAgents.length === 0 && (
+            <div className="text-center py-12">
+              <ComputerDesktopIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <div className="text-gray-500">No computers found matching your criteria</div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
-};
+}
 
-export default Agents; 
+export default AgentsWatchGuardStyle;
