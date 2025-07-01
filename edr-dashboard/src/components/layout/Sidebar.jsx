@@ -14,7 +14,8 @@ import {
   BellIcon,
   ServerIcon,
   GlobeAltIcon,
-  LockClosedIcon
+  LockClosedIcon,
+  AdjustmentsHorizontalIcon
 } from '@heroicons/react/24/outline';
 
 const Sidebar = ({ isOpen, onClose, currentPath, systemStatus }) => {
@@ -67,6 +68,14 @@ const Sidebar = ({ isOpen, onClose, currentPath, systemStatus }) => {
       description: 'AI-powered security insights',
       badge: 'NEW',
       badgeColor: 'bg-purple-500'
+    },
+    {
+      name: 'Detection Rules',
+      href: '/rules',
+      icon: AdjustmentsHorizontalIcon,
+      description: 'Manage detection rules',
+      badge: '15',
+      badgeColor: 'bg-green-500'
     },
     {
       name: 'Reports',

@@ -401,7 +401,7 @@ const FilterPanel = ({ filters, onFiltersChange, onApply, onReset }) => {
 };
 
 // Main Agents Component
-export const Agents = () => {
+const Agents = () => {
   const [agentsData, setAgentsData] = useState(null);
   const [agentsList, setAgentsList] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -715,3 +715,5 @@ export const Agents = () => {
     </div>
   );
 };
+
+export default Agents;

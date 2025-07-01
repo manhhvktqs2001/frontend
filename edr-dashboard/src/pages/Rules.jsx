@@ -1,3 +1,6 @@
+// File: src/pages/Rules.jsx
+// Complete Detection Rules component
+
 import React, { useState, useEffect } from 'react';
 import { 
   PlusIcon,
@@ -436,7 +439,7 @@ const RuleDetailModal = ({ rule, onClose }) => {
   );
 };
 
-export const Rules = () => {
+const Rules = () => {
   const [rules, setRules] = useState([
     {
       id: 1,
@@ -685,30 +688,18 @@ network.bytes > 10MB`,
           <div className="text-center py-12">
             <Cog6ToothIcon className="w-16 h-16 mx-auto mb-4 text-gray-600" />
             <h3 className="text-xl font-medium text-gray-400 mb-2">No rules found</h3>
-            <p className="text-gray-500">
-              {searchQuery || Object.values(filters).some(f => f) 
-                ? 'Try adjusting your search criteria' 
-                : 'Create your first detection rule to get started'
-              }
-            </p>
+            <p className="text-gray-500">Try adjusting your search or filters.</p>
           </div>
         )}
       </div>
 
       {/* Modals */}
       <CreateRuleModal
-        isOpen={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
-        onSave={handleCreateRule}
-      />
-
-      <CreateRuleModal
-        isOpen={!!editingRule}
-        onClose={() => setEditingRule(null)}
-        onSave={handleEditRule}
+        isOpen={showCreateModal || !!editingRule}
+        onClose={() => { setShowCreateModal(false); setEditingRule(null); }}
+        onSave={editingRule ? handleEditRule : handleCreateRule}
         initialRule={editingRule}
       />
-
       <RuleDetailModal
         rule={viewingRule}
         onClose={() => setViewingRule(null)}
@@ -716,3 +707,5 @@ network.bytes > 10MB`,
     </div>
   );
 };
+
+export default Rules;

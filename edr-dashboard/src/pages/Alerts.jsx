@@ -339,7 +339,6 @@ const FilterPanel = ({ filters, onFiltersChange, onApply, onReset }) => {
         <FunnelIcon className="w-5 h-5" />
         Filters
       </h3>
-      
       <div className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">Severity</label>
@@ -355,7 +354,6 @@ const FilterPanel = ({ filters, onFiltersChange, onApply, onReset }) => {
             <option value="Low">Low</option>
           </select>
         </div>
-        
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">Status</label>
           <select
@@ -371,7 +369,6 @@ const FilterPanel = ({ filters, onFiltersChange, onApply, onReset }) => {
             <option value="Suppressed">Suppressed</option>
           </select>
         </div>
-        
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">Time Range</label>
           <select
@@ -386,7 +383,6 @@ const FilterPanel = ({ filters, onFiltersChange, onApply, onReset }) => {
             <option value="168">Last 7 days</option>
           </select>
         </div>
-        
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">Alert Type</label>
           <select
@@ -401,7 +397,6 @@ const FilterPanel = ({ filters, onFiltersChange, onApply, onReset }) => {
             <option value="Policy">Policy Violation</option>
           </select>
         </div>
-        
         <div className="flex gap-2 pt-4">
           <button
             onClick={onApply}
@@ -422,7 +417,7 @@ const FilterPanel = ({ filters, onFiltersChange, onApply, onReset }) => {
 };
 
 // Main Alerts Component
-export const Alerts = () => {
+const Alerts = () => {
   const [alertsData, setAlertsData] = useState(null);
   const [alertsList, setAlertsList] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -752,3 +747,5 @@ export const Alerts = () => {
     </div>
   );
 };
+
+export default Alerts;

@@ -9,6 +9,7 @@ import Events from './pages/Events';
 import Analytics from './pages/Analytics';
 import AI from './pages/AI';
 import Reports from './pages/Reports';
+import Rules from './pages/Rules';
 import Settings from './pages/Settings';
 import NotFound from './pages/NotFound';
 
@@ -80,6 +81,7 @@ const App = () => {
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/ai" element={<AI />} />
           <Route path="/reports" element={<Reports />} />
+          <Route path="/rules" element={<Rules />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
