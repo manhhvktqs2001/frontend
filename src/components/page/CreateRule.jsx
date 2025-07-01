@@ -8,7 +8,7 @@ import {
   InformationCircleIcon,
   CheckCircleIcon
 } from '@heroicons/react/24/outline';
-import { createDetectionRule, fetchRuleTypes } from '../services/api';
+import { createDetectionRule, fetchRuleTypes } from '../../service/api';
 import toast from 'react-hot-toast';
 
 const CreateRule = () => {
@@ -399,3 +399,54 @@ const CreateRule = () => {
             >
               <option value="AND">AND</option>
               <option value="OR">OR</option>
+            </select>
+          </div>
+
+          {/* Hiển thị danh sách điều kiện */}
+          {conditions.map((condition, idx) => (
+            <div key={condition.id} className="flex items-center space-x-2 mb-2">
+              <select
+                value={condition.field}
+                onChange={e => handleConditionChange(condition.id, 'field', e.target.value)}
+                className="px-2 py-1 border rounded"
+              >
+                {fieldOptions.map(opt => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+              <select
+                value={condition.operator}
+                onChange={e => handleConditionChange(condition.id, 'operator', e.target.value)}
+                className="px-2 py-1 border rounded"
+              >
+                {operatorOptions.map(opt => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+              <input
+                type="text"
+                value={condition.value}
+                onChange={e => handleConditionChange(condition.id, 'value', e.target.value)}
+                className="px-2 py-1 border rounded"
+                placeholder="Value"
+              />
+              <button type="button" onClick={() => removeCondition(condition.id)} className="text-red-500 hover:text-red-700">
+                <TrashIcon className="w-4 h-4" />
+              </button>
+            </div>
+          ))}
+        </div>
+        <div className="flex justify-end mt-8">
+          <button
+            type="submit"
+            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 font-semibold shadow"
+          >
+            Create Rule
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+};
+
+export default CreateRule;

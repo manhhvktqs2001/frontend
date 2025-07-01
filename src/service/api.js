@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // API Base URL - adjust according to your backend
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://192.168.20.85:5000/api/v1';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://192.168.20.85:5000/api/v1';
 
 // Create axios instance
 const api = axios.create({
