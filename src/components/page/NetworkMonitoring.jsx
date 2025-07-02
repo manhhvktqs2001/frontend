@@ -19,9 +19,9 @@ import {
   ComputerDesktopIcon
 } from '@heroicons/react/24/outline';
 import { Line, Doughnut, Bar } from 'react-chartjs-2';
-import { Chart, CategoryScale, LinearScale, PointElement, LineElement, ArcElement, BarElement, Title, Tooltip, Legend } from 'chart.js';
+import { Chart, CategoryScale, LinearScale, PointElement, LineElement, ArcElement, BarElement, Title, Tooltip, Legend, Filler } from 'chart.js';
 
-Chart.register(CategoryScale, LinearScale, PointElement, LineElement, ArcElement, BarElement, Title, Tooltip, Legend);
+Chart.register(CategoryScale, LinearScale, PointElement, LineElement, ArcElement, BarElement, Title, Tooltip, Legend, Filler);
 
 const NetworkMonitoring = () => {
   const [networkStats, setNetworkStats] = useState({
