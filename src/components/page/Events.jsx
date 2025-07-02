@@ -29,16 +29,29 @@ const severityMap = {
   info: 'text-blue-400',
 };
 
+const EVENT_TYPES = [
+  { label: 'All', value: 'All' },
+  { label: 'Process', value: 'Process' },
+  { label: 'File', value: 'File' },
+  { label: 'Network', value: 'Network' },
+  { label: 'Registry', value: 'Registry' },
+  { label: 'Authentication', value: 'Authentication' },
+  { label: 'System', value: 'System' },
+];
+
+const PAGE_SIZE = 20;
+
 const Events = () => {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [search, setSearch] = useState('');
-  const [filterType, setFilterType] = useState('All');
   const [filterSeverity, setFilterSeverity] = useState('All');
   const [selectedEvents, setSelectedEvents] = useState([]);
   const [showDetails, setShowDetails] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(new Date());
+  const [activeType, setActiveType] = useState('All');
+  const [currentPage, setCurrentPage] = useState(1);
 
   const fetchEventsData = async () => {
     setLoading(true);
@@ -65,7 +78,7 @@ const Events = () => {
   const filtered = events.filter(event => {
     const matchesSearch = (event.event_type || '').toLowerCase().includes(search.toLowerCase()) ||
       (event.event_action || '').toLowerCase().includes(search.toLowerCase());
-    const matchesType = filterType === 'All' || (event.event_type || '').toLowerCase() === filterType.toLowerCase();
+    const matchesType = activeType === 'All' || (event.event_type || '').toLowerCase() === activeType.toLowerCase();
     const matchesSeverity = filterSeverity === 'All' || (event.severity || '').toLowerCase() === filterSeverity.toLowerCase();
     return matchesSearch && matchesType && matchesSeverity;
   });
@@ -118,6 +131,14 @@ const Events = () => {
     window.URL.revokeObjectURL(url);
   };
 
+  // Pagination
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const paginated = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+  useEffect(() => {
+    setCurrentPage(1); // Reset page khi đổi loại event
+  }, [activeType, search, filterSeverity]);
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-indigo-950 to-purple-950">
@@ -160,26 +181,26 @@ const Events = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-950 to-purple-950 text-white">
       {/* Header & Stats */}
-      <div className="px-8 py-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-white/10 bg-white/10 backdrop-blur-xl shadow-lg sticky top-0 z-20">
+      <div className="px-4 py-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-white/10 bg-white/10 backdrop-blur-xl shadow-xl sticky top-0 z-30 rounded-b-2xl animate-fadeInDown">
         <div className="flex items-center gap-4">
-          <ChartBarIcon className="w-10 h-10 text-purple-400 drop-shadow-lg" />
+          <ChartBarIcon className="w-9 h-9 text-purple-400 drop-shadow-lg" />
           <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-indigo-400 bg-clip-text text-transparent tracking-tight">Events</h1>
+            <h1 className="text-3xl font-extrabold bg-gradient-to-r from-purple-400 to-indigo-400 bg-clip-text text-transparent tracking-tight drop-shadow">Events</h1>
             <p className="text-gray-300 text-sm mt-1">Monitor system events and activities</p>
           </div>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           <button
             onClick={fetchEventsData}
             disabled={loading}
-            className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium disabled:opacity-50 shadow-lg"
+            className={`flex items-center gap-2 px-5 py-2 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 text-white font-semibold shadow-lg hover:scale-105 transition-all duration-200 ${loading ? 'opacity-60 cursor-not-allowed' : ''}`}
           >
             <ArrowPathIcon className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
             Refresh
           </button>
           <button
             onClick={exportEvents}
-            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium shadow-lg"
+            className="flex items-center gap-2 px-5 py-2 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 text-white font-semibold shadow-lg hover:scale-105 transition-all duration-200"
           >
             <ArrowDownTrayIcon className="w-5 h-5" />
             Export
@@ -244,36 +265,36 @@ const Events = () => {
         </div>
       </div>
 
+      {/* Tabs chọn loại event */}
+      <div className="px-4 pt-6 flex flex-wrap gap-2 mb-4 animate-fadeIn">
+        {EVENT_TYPES.map(type => (
+          <button
+            key={type.value}
+            onClick={() => setActiveType(type.value)}
+            className={`px-5 py-2 rounded-full font-semibold border border-white/10 shadow-md transition-all duration-200 text-base ${activeType === type.value ? 'bg-gradient-to-r from-purple-500 to-indigo-500 text-white scale-105 shadow-xl' : 'bg-white/10 text-gray-200 hover:bg-purple-800/40'}`}
+          >
+            {type.label}
+          </button>
+        ))}
+      </div>
+
       {/* Filters & Bulk Actions */}
-      <div className="px-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-        <div className="flex gap-2">
-          <div className="relative">
+      <div className="px-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6 animate-fadeIn">
+        <div className="flex gap-2 w-full md:w-auto">
+          <div className="relative w-full md:w-64">
             <MagnifyingGlassIcon className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
               type="text"
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Search event type or action..."
-              className="pl-10 pr-4 py-2 bg-white/10 border border-white/10 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-white placeholder:text-gray-400"
+              className="pl-10 pr-4 py-2 w-full bg-white/10 border border-white/10 rounded-full focus:ring-2 focus:ring-purple-500 focus:border-transparent text-white placeholder:text-gray-400 shadow-md"
             />
           </div>
           <select
-            value={filterType}
-            onChange={e => setFilterType(e.target.value)}
-            className="px-4 py-2 bg-white/10 border border-white/10 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-white"
-          >
-            <option value="All">All Types</option>
-            <option value="Process">Process</option>
-            <option value="File">File</option>
-            <option value="Network">Network</option>
-            <option value="Registry">Registry</option>
-            <option value="Authentication">Authentication</option>
-            <option value="System">System</option>
-          </select>
-          <select
             value={filterSeverity}
             onChange={e => setFilterSeverity(e.target.value)}
-            className="px-4 py-2 bg-white/10 border border-white/10 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-white"
+            className="px-4 py-2 bg-white/10 border border-white/10 rounded-full focus:ring-2 focus:ring-purple-500 focus:border-transparent text-white shadow-md"
           >
             <option value="All">All Severity</option>
             <option value="Critical">Critical</option>
@@ -284,7 +305,7 @@ const Events = () => {
           </select>
         </div>
         {selectedEvents.length > 0 && (
-          <div className="flex gap-2 items-center bg-purple-900/60 px-4 py-2 rounded-lg shadow-lg">
+          <div className="flex gap-2 items-center bg-purple-900/60 px-4 py-2 rounded-lg shadow-lg animate-fadeIn">
             <span className="text-purple-200 font-medium">{selectedEvents.length} selected</span>
             <button className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700">Export Selected</button>
             <button className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700">Delete Selected</button>
@@ -293,11 +314,11 @@ const Events = () => {
       </div>
 
       {/* Events Table */}
-      <div className="px-8 overflow-x-auto rounded-2xl shadow-2xl bg-white/10 border border-white/10">
-        <table className="min-w-full divide-y divide-white/10">
-          <thead className="bg-white/5">
+      <div className="px-4 overflow-x-auto rounded-2xl shadow-2xl bg-white/10 border border-white/10 animate-fadeInUp">
+        <table className="min-w-full divide-y divide-white/10 rounded-2xl overflow-hidden">
+          <thead className="bg-white/10">
             <tr>
-              <th className="px-6 py-3 text-left">
+              <th className="px-4 py-3 text-left align-middle w-8">
                 <input
                   type="checkbox"
                   checked={selectedEvents.length === filtered.length && filtered.length > 0}
@@ -305,18 +326,18 @@ const Events = () => {
                   className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
                 />
               </th>
-              <th className="px-6 py-3 text-left text-xs font-bold text-gray-300 uppercase tracking-wider">Type</th>
-              <th className="px-6 py-3 text-left text-xs font-bold text-gray-300 uppercase tracking-wider">Action</th>
-              <th className="px-6 py-3 text-left text-xs font-bold text-gray-300 uppercase tracking-wider">Agent</th>
-              <th className="px-6 py-3 text-left text-xs font-bold text-gray-300 uppercase tracking-wider">Time</th>
-              <th className="px-6 py-3 text-left text-xs font-bold text-gray-300 uppercase tracking-wider">Severity</th>
-              <th className="px-6 py-3 text-left text-xs font-bold text-gray-300 uppercase tracking-wider">Actions</th>
+              <th className="px-4 py-3 text-left text-xs font-bold text-gray-300 uppercase tracking-wider min-w-[110px] align-middle">Type</th>
+              <th className="px-4 py-3 text-left text-xs font-bold text-gray-300 uppercase tracking-wider min-w-[120px] align-middle">Action</th>
+              <th className="px-4 py-3 text-left text-xs font-bold text-gray-300 uppercase tracking-wider min-w-[260px] align-middle">Agent</th>
+              <th className="px-4 py-3 text-left text-xs font-bold text-gray-300 uppercase tracking-wider min-w-[180px] align-middle">Time</th>
+              <th className="px-4 py-3 text-center text-xs font-bold text-gray-300 uppercase tracking-wider min-w-[90px] align-middle">Severity</th>
+              <th className="px-4 py-3 text-center text-xs font-bold text-gray-300 uppercase tracking-wider min-w-[100px] align-middle">Actions</th>
             </tr>
           </thead>
           <tbody className="bg-white/5 divide-y divide-white/10">
-            {filtered.map(event => (
-              <tr key={event.event_id || event.EventID} className="hover:bg-purple-900/30 transition-all">
-                <td className="px-6 py-4">
+            {paginated.map(event => (
+              <tr key={event.event_id || event.EventID} className="hover:bg-purple-900/30 transition-all duration-150">
+                <td className="px-4 py-4 align-middle">
                   <input
                     type="checkbox"
                     checked={selectedEvents.includes(event.event_id || event.EventID)}
@@ -324,19 +345,17 @@ const Events = () => {
                     className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
                   />
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap font-medium text-white">{event.event_type}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-gray-200">{event.event_action}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-gray-200">{event.agent_id}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-gray-200">{event.event_timestamp}</td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`px-2 py-1 bg-${(event.severity || '').toLowerCase() === 'critical' ? 'red' : (event.severity || '').toLowerCase() === 'high' ? 'orange' : (event.severity || '').toLowerCase() === 'medium' ? 'yellow' : (event.severity || '').toLowerCase() === 'low' ? 'green' : 'blue'}-900/60 text-${(event.severity || '').toLowerCase() === 'critical' ? 'red' : (event.severity || '').toLowerCase() === 'high' ? 'orange' : (event.severity || '').toLowerCase() === 'medium' ? 'yellow' : (event.severity || '').toLowerCase() === 'low' ? 'green' : 'blue'}-200 rounded-full text-xs font-medium`}>
-                    {event.severity}
-                  </span>
+                <td className="px-4 py-4 whitespace-nowrap font-medium text-white align-middle">{event.event_type}</td>
+                <td className="px-4 py-4 whitespace-nowrap text-gray-200 align-middle">{event.event_action}</td>
+                <td className="px-4 py-4 whitespace-nowrap text-gray-200 align-middle font-mono text-xs">{event.agent_id}</td>
+                <td className="px-4 py-4 whitespace-nowrap text-gray-200 align-middle font-mono text-xs">{event.event_timestamp}</td>
+                <td className="px-4 py-4 align-middle text-center">
+                  <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold shadow-md bg-gradient-to-r ${event.severity?.toLowerCase() === 'critical' ? 'from-red-600 to-red-900' : event.severity?.toLowerCase() === 'high' ? 'from-orange-500 to-orange-900' : event.severity?.toLowerCase() === 'medium' ? 'from-yellow-500 to-yellow-900' : event.severity?.toLowerCase() === 'low' ? 'from-green-500 to-green-900' : 'from-blue-500 to-blue-900'} text-white`}>{event.severity}</span>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
+                <td className="px-4 py-4 align-middle text-center">
                   <button
                     onClick={() => setShowDetails(event)}
-                    className="text-purple-400 hover:text-purple-300 font-medium underline"
+                    className="px-3 py-1 rounded-full bg-purple-700 text-white font-medium shadow hover:bg-purple-800 transition-all duration-150"
                   >
                     View Details
                   </button>
@@ -347,53 +366,75 @@ const Events = () => {
         </table>
       </div>
 
+      {/* Pagination */}
+      <div className="px-4 py-6 flex justify-center items-center gap-3 animate-fadeInUp">
+        <button
+          onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+          disabled={currentPage === 1}
+          className="px-4 py-2 rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-semibold shadow hover:scale-105 transition-all disabled:opacity-50"
+        >Prev</button>
+        <span className="mx-2 text-lg font-bold">Page {currentPage} / {totalPages || 1}</span>
+        <button
+          onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+          disabled={currentPage === totalPages || totalPages === 0}
+          className="px-4 py-2 rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-semibold shadow hover:scale-105 transition-all disabled:opacity-50"
+        >Next</button>
+      </div>
+
       {/* Event Details Modal */}
       {showDetails && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white/10 rounded-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto border border-white/10 shadow-2xl">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-white">Event Details</h2>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-gradient-to-br from-slate-900 via-indigo-950 to-purple-950 border border-white/10 rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto relative animate-fadeIn">
+            <div className="flex items-center justify-between p-6 border-b border-white/10">
+              <div className="flex items-center gap-3">
+                <EyeIcon className="w-8 h-8 text-purple-400" />
+                <h2 className="text-2xl font-bold text-white">Event Details</h2>
+              </div>
               <button
                 onClick={() => setShowDetails(null)}
-                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                className="p-2 rounded-lg hover:bg-purple-900/40 transition-colors group"
+                aria-label="Close details"
               >
-                <XCircleIcon className="w-6 h-6 text-gray-300" />
+                <XCircleIcon className="w-7 h-7 text-gray-300 group-hover:text-red-400 transition-colors" />
               </button>
             </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <h3 className="text-lg font-semibold text-white mb-4">Event Information</h3>
-                <div className="space-y-3">
-                  <div>
-                    <label className="text-sm font-medium text-gray-300">Event Type</label>
-                    <p className="text-white">{showDetails.event_type}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-300">Action</label>
-                    <p className="text-white">{showDetails.event_action}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-300">Agent ID</label>
-                    <p className="text-white">{showDetails.agent_id}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-300">Timestamp</label>
-                    <p className="text-white">{showDetails.event_timestamp}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-300">Severity</label>
-                    <p className={`font-semibold ${severityMap[(showDetails.severity || '').toLowerCase()]}`}>
-                      {showDetails.severity}
-                    </p>
-                  </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6">
+              {/* Thông tin chính */}
+              <div className="space-y-4">
+                <div>
+                  <span className="block text-xs text-gray-400 font-semibold uppercase mb-1">Type</span>
+                  <span className="text-lg font-bold text-purple-300">{showDetails.event_type}</span>
+                </div>
+                <div>
+                  <span className="block text-xs text-gray-400 font-semibold uppercase mb-1">Action</span>
+                  <span className="text-base text-white">{showDetails.event_action}</span>
+                </div>
+                <div>
+                  <span className="block text-xs text-gray-400 font-semibold uppercase mb-1">Agent ID</span>
+                  <span className="text-base text-white break-all">{showDetails.agent_id}</span>
+                </div>
+                <div>
+                  <span className="block text-xs text-gray-400 font-semibold uppercase mb-1">Timestamp</span>
+                  <span className="text-base text-white">{showDetails.event_timestamp}</span>
+                </div>
+                <div>
+                  <span className="block text-xs text-gray-400 font-semibold uppercase mb-1">Severity</span>
+                  <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold bg-${(showDetails.severity || '').toLowerCase() === 'critical' ? 'red' : (showDetails.severity || '').toLowerCase() === 'high' ? 'orange' : (showDetails.severity || '').toLowerCase() === 'medium' ? 'yellow' : (showDetails.severity || '').toLowerCase() === 'low' ? 'green' : 'blue'}-900/60 text-${(showDetails.severity || '').toLowerCase() === 'critical' ? 'red' : (showDetails.severity || '').toLowerCase() === 'high' ? 'orange' : (showDetails.severity || '').toLowerCase() === 'medium' ? 'yellow' : (showDetails.severity || '').toLowerCase() === 'low' ? 'green' : 'blue'}-200`}>{showDetails.severity}</span>
                 </div>
               </div>
-              
-              <div>
-                <h3 className="text-lg font-semibold text-white mb-4">Event Details</h3>
-                <div className="bg-gray-800/60 rounded-lg p-4">
-                  <pre className="text-sm text-gray-200 whitespace-pre-wrap">
+              {/* Chi tiết JSON */}
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-semibold text-gray-300">Raw Event Data</span>
+                  <button
+                    className="px-2 py-1 text-xs bg-purple-700 text-white rounded hover:bg-purple-800 transition-colors"
+                    onClick={() => {
+                      navigator.clipboard.writeText(JSON.stringify(showDetails.event_details || showDetails, null, 2));
+                    }}
+                  >Copy JSON</button>
+                </div>
+                <div className="bg-black/60 rounded-lg p-3 overflow-x-auto max-h-60 border border-white/10">
+                  <pre className="text-xs text-purple-100 font-mono whitespace-pre-wrap">
                     {JSON.stringify(showDetails.event_details || showDetails, null, 2)}
                   </pre>
                 </div>

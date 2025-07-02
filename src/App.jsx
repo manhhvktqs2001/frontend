@@ -1,7 +1,7 @@
 import React from 'react';
-// Router imports will be handled by parent
 import { QueryClient, QueryClientProvider } from 'react-query';
 import { Toaster } from 'react-hot-toast';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import Sidebar from './components/Layout/Sidebar';
 import Header from './components/Layout/Header';
 import Dashboard from './components/page/Dashboard';
@@ -24,47 +24,28 @@ const queryClient = new QueryClient({
   },
 });
 
-// Simple App Component - you need to handle routing in your main project
-const App = ({ currentPath = '/', onNavigate = () => {} }) => {
-  // Simple routing based on currentPath
-  const renderCurrentPage = () => {
-    switch (currentPath) {
-      case '/agents':
-        return <Agents />;
-      case '/events':
-        return <Events />;
-      case '/alerts':
-        return <Alerts />;
-      case '/rules':
-        return <Rules />;
-      case '/threats':
-        return <Threats />;
-      case '/settings':
-        return <Settings />;
-      case '/threat-hunt':
-        return <ThreatHunt />;
-      case '/network':
-      case '/monitoring':
-        return <NetworkMonitoring />;
-      default:
-        return <Dashboard />;
-    }
-  };
-
+const App = () => {
+  const location = useLocation();
   return (
     <QueryClientProvider client={queryClient}>
       <div className="flex h-screen bg-gray-50">
-        <Sidebar 
-          currentPath={currentPath} 
-          onNavigate={onNavigate}
-        />
+        <Sidebar currentPath={location.pathname} />
         <div className="flex-1 flex flex-col min-w-0">
           <Header />
           <main className="flex-1 overflow-y-auto">
-            {renderCurrentPage()}
+            <Routes>
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/agents" element={<Agents />} />
+              <Route path="/events" element={<Events />} />
+              <Route path="/alerts" element={<Alerts />} />
+              <Route path="/rules" element={<Rules />} />
+              <Route path="/threats" element={<Threats />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/threat-hunt" element={<ThreatHunt />} />
+              <Route path="/network" element={<NetworkMonitoring />} />
+            </Routes>
           </main>
         </div>
-        
         {/* Toast Notifications */}
         <Toaster
           position="top-right"

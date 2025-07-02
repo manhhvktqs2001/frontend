@@ -54,9 +54,8 @@ const Agents = () => {
 
   useEffect(() => {
     fetchAgentsData();
-    
-    // Auto refresh every 30 seconds
-    const interval = setInterval(fetchAgentsData, 30000);
+    // Auto refresh every 10 seconds (realtime hơn)
+    const interval = setInterval(fetchAgentsData, 10000);
     return () => clearInterval(interval);
   }, []);
 

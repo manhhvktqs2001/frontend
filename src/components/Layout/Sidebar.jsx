@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   HomeIcon,
   UserGroupIcon,
@@ -26,7 +27,8 @@ import {
 } from '@heroicons/react/24/outline';
 import { fetchDashboardStats, fetchAlerts, fetchThreats, fetchAgents } from '../../service/api';
 
-const Sidebar = ({ currentPath = '/', onNavigate = () => {}, user = { role: 'admin' } }) => {
+const Sidebar = ({ currentPath = '/', user = { role: 'admin' } }) => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('DASHBOARD');
   const [expandedMenus, setExpandedMenus] = useState({});
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -184,7 +186,7 @@ const Sidebar = ({ currentPath = '/', onNavigate = () => {}, user = { role: 'adm
 
   // Handle navigation
   const handleNavigation = (path) => {
-    onNavigate(path);
+    navigate(path);
   };
 
   // Responsive: collapse on small screens
