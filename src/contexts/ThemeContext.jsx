@@ -88,7 +88,7 @@ export const ThemeProvider = ({ children }) => {
       {children}
       
       {/* Global CSS for smooth transitions */}
-      <style jsx global>{`
+      <style>{`
         :root {
           --transition-duration: 0.3s;
           --transition-timing: cubic-bezier(0.4, 0, 0.2, 1);

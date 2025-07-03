@@ -19,6 +19,7 @@ import {
   TrashIcon
 } from '@heroicons/react/24/outline';
 import { fetchAlerts } from '../../service/api';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const severityMap = {
   critical: 'text-red-400',
@@ -36,6 +37,7 @@ const statusMap = {
 };
 
 const Alerts = () => {
+  const { isDarkMode, isTransitioning } = useTheme();
   const [alerts, setAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -198,14 +200,37 @@ const Alerts = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-indigo-950 to-purple-950">
+      <div className={`
+        min-h-screen flex items-center justify-center transition-all duration-300
+        ${isDarkMode 
+          ? 'bg-gradient-to-br from-slate-900 via-indigo-950 to-purple-950' 
+          : 'bg-gradient-to-br from-indigo-50 via-white to-purple-50'
+        }
+        ${isTransitioning ? 'theme-transitioning' : ''}
+      `}>
         <div className="text-center">
           <div className="relative">
-            <div className="w-20 h-20 border-4 border-purple-200 rounded-full animate-spin"></div>
-            <div className="w-20 h-20 border-4 border-purple-600 border-t-transparent rounded-full animate-spin absolute top-0"></div>
+            <div className={`
+              w-20 h-20 border-4 rounded-full animate-spin
+              ${isDarkMode ? 'border-purple-200' : 'border-purple-300'}
+            `}></div>
+            <div className={`
+              w-20 h-20 border-4 border-t-transparent rounded-full animate-spin absolute top-0
+              ${isDarkMode ? 'border-purple-600' : 'border-purple-600'}
+            `}></div>
           </div>
-          <h3 className="mt-6 text-xl font-semibold text-gray-100">Loading Alerts...</h3>
-          <p className="mt-2 text-gray-400">Fetching alert data...</p>
+          <h3 className={`
+            mt-6 text-xl font-semibold transition-colors duration-300
+            ${isDarkMode ? 'text-gray-100' : 'text-gray-900'}
+          `}>
+            Loading Alerts...
+          </h3>
+          <p className={`
+            mt-2 transition-colors duration-300
+            ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}
+          `}>
+            Fetching alert data...
+          </p>
         </div>
       </div>
     );
@@ -213,48 +238,94 @@ const Alerts = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-red-900 to-pink-900">
+      <div className={`
+        min-h-screen flex items-center justify-center transition-all duration-300
+        ${isDarkMode 
+          ? 'bg-gradient-to-br from-slate-900 via-red-900 to-pink-900' 
+          : 'bg-gradient-to-br from-red-50 via-white to-pink-50'
+        }
+        ${isTransitioning ? 'theme-transitioning' : ''}
+      `}>
         <div className="text-center max-w-md mx-auto p-8">
-          <ExclamationTriangleIcon className="w-16 h-16 text-red-400 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-red-200 mb-2">Connection Error</h3>
-          <p className="text-red-300 mb-6">{error}</p>
+          <ExclamationTriangleIcon className={`
+            w-16 h-16 mx-auto mb-4 transition-colors duration-300
+            ${isDarkMode ? 'text-red-400' : 'text-red-500'}
+          `} />
+          <h3 className={`
+            text-xl font-semibold mb-2 transition-colors duration-300
+            ${isDarkMode ? 'text-red-200' : 'text-red-800'}
+          `}>
+            Connection Error
+          </h3>
+          <p className={`
+            mb-6 transition-colors duration-300
+            ${isDarkMode ? 'text-red-300' : 'text-red-600'}
+          `}>
+            {error}
+          </p>
           <button
             onClick={fetchAlertsData}
-            className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200 font-medium"
-          >Try Again</button>
+            className={`
+              px-6 py-3 rounded-lg font-medium transition-all duration-200 hover:scale-105
+              ${isDarkMode 
+                ? 'bg-red-600 text-white hover:bg-red-700' 
+                : 'bg-red-600 text-white hover:bg-red-700'
+              }
+            `}
+          >
+            Try Again
+          </button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-950 to-purple-950 text-white">
+    <div className={`
+      min-h-screen transition-all duration-300
+      ${isDarkMode 
+        ? 'bg-gradient-to-br from-slate-900 via-indigo-950 to-purple-950 text-white' 
+        : 'bg-gradient-to-br from-blue-50 via-white to-indigo-50 text-gray-900'}
+      ${isTransitioning ? 'theme-transitioning' : ''}
+    `}>
       {/* Header & Stats */}
-      <div className="px-8 py-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-white/10 bg-white/10 backdrop-blur-xl shadow-lg sticky top-0 z-20">
+      <div className={`
+        px-8 py-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b shadow-lg sticky top-0 z-20 backdrop-blur-xl transition-all duration-300
+        ${isDarkMode 
+          ? 'border-white/10 bg-white/10' 
+          : 'border-gray-200/50 bg-white/80'}
+      `}>
         <div className="flex items-center gap-4">
           <BellIcon className="w-10 h-10 text-purple-400 drop-shadow-lg" />
           <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-indigo-400 bg-clip-text text-transparent tracking-tight">Alerts</h1>
-            <p className="text-gray-300 text-sm mt-1">Monitor security alerts and incidents</p>
+            <h1 className={`
+              text-3xl font-bold tracking-tight transition-colors duration-300
+              ${isDarkMode 
+                ? 'bg-gradient-to-r from-purple-400 to-indigo-400 bg-clip-text text-transparent' 
+                : 'bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent'}
+            `}>
+              Alerts
+            </h1>
+            <p className={`text-sm mt-1 transition-colors duration-300 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>Monitor security alerts and incidents</p>
           </div>
         </div>
         <div className="flex items-center gap-4">
           <button
             onClick={fetchAlertsData}
             disabled={loading}
-            className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium disabled:opacity-50 shadow-lg"
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium disabled:opacity-50 shadow-lg transition-all duration-200 hover:scale-105 ${isDarkMode ? 'bg-purple-600 text-white hover:bg-purple-700' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
           >
             <ArrowPathIcon className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
             Refresh
           </button>
           <button
             onClick={exportAlerts}
-            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium shadow-lg"
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium shadow-lg transition-all duration-200 hover:scale-105 ${isDarkMode ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-green-600 text-white hover:bg-green-700'}`}
           >
             <ArrowDownTrayIcon className="w-5 h-5" />
             Export All
           </button>
-          <div className="flex items-center gap-2 text-sm text-gray-200">
+          <div className={`flex items-center gap-2 text-sm transition-colors duration-300 ${isDarkMode ? 'text-gray-200' : 'text-gray-600'}`}>
             <ClockIcon className="w-4 h-4" />
             <span>Last updated: {lastUpdated.toLocaleTimeString()}</span>
           </div>
@@ -263,52 +334,73 @@ const Alerts = () => {
 
       {/* Stats Cards */}
       <div className="p-8 grid grid-cols-2 md:grid-cols-7 gap-4">
-        <div className="bg-gradient-to-br from-purple-700 to-purple-900 rounded-2xl shadow-2xl p-4 flex flex-col gap-2 hover:scale-[1.03] transition-transform duration-300 border border-white/10">
+        <div className={`
+          rounded-2xl shadow-2xl p-4 flex flex-col gap-2 hover:scale-[1.03] transition-transform duration-300 border
+          ${isDarkMode ? 'bg-gradient-to-br from-purple-700 to-purple-900 border-white/10' : 'bg-gradient-to-br from-purple-500 to-purple-700 border-purple-200'}
+        `}>
           <div className="flex items-center gap-2 mb-2">
-            <BellIcon className="w-6 h-6 text-purple-300" />
-            <span className="text-sm font-semibold text-purple-100">Total</span>
+            <BellIcon className={`w-6 h-6 ${isDarkMode ? 'text-purple-300' : 'text-purple-100'}`} />
+            <span className={`text-sm font-semibold ${isDarkMode ? 'text-purple-100' : 'text-purple-100'}`}>Total</span>
           </div>
           <div className="text-2xl font-bold text-white drop-shadow-lg">{stats.total}</div>
         </div>
-        <div className="bg-gradient-to-br from-red-700 to-red-900 rounded-2xl shadow-2xl p-4 flex flex-col gap-2 hover:scale-[1.03] transition-transform duration-300 border border-white/10">
+        <div className={`
+          rounded-2xl shadow-2xl p-4 flex flex-col gap-2 hover:scale-[1.03] transition-transform duration-300 border
+          ${isDarkMode ? 'bg-gradient-to-br from-red-700 to-red-900 border-white/10' : 'bg-gradient-to-br from-red-500 to-pink-700 border-red-200'}
+        `}>
           <div className="flex items-center gap-2 mb-2">
-            <ExclamationTriangleIcon className="w-6 h-6 text-red-300" />
-            <span className="text-sm font-semibold text-red-100">Open</span>
+            <ExclamationTriangleIcon className={`w-6 h-6 ${isDarkMode ? 'text-red-300' : 'text-red-100'}`} />
+            <span className={`text-sm font-semibold ${isDarkMode ? 'text-red-100' : 'text-red-100'}`}>Open</span>
           </div>
           <div className="text-2xl font-bold text-white drop-shadow-lg">{stats.open}</div>
         </div>
-        <div className="bg-gradient-to-br from-yellow-700 to-yellow-900 rounded-2xl shadow-2xl p-4 flex flex-col gap-2 hover:scale-[1.03] transition-transform duration-300 border border-white/10">
+        <div className={`
+          rounded-2xl shadow-2xl p-4 flex flex-col gap-2 hover:scale-[1.03] transition-transform duration-300 border
+          ${isDarkMode ? 'bg-gradient-to-br from-yellow-700 to-yellow-900 border-white/10' : 'bg-gradient-to-br from-yellow-500 to-yellow-700 border-yellow-200'}
+        `}>
           <div className="flex items-center gap-2 mb-2">
-            <ClockIcon className="w-6 h-6 text-yellow-300" />
-            <span className="text-sm font-semibold text-yellow-100">Investigating</span>
+            <ClockIcon className={`w-6 h-6 ${isDarkMode ? 'text-yellow-300' : 'text-yellow-100'}`} />
+            <span className={`text-sm font-semibold ${isDarkMode ? 'text-yellow-100' : 'text-yellow-100'}`}>Investigating</span>
           </div>
           <div className="text-2xl font-bold text-white drop-shadow-lg">{stats.investigating}</div>
         </div>
-        <div className="bg-gradient-to-br from-green-700 to-green-900 rounded-2xl shadow-2xl p-4 flex flex-col gap-2 hover:scale-[1.03] transition-transform duration-300 border border-white/10">
+        <div className={`
+          rounded-2xl shadow-2xl p-4 flex flex-col gap-2 hover:scale-[1.03] transition-transform duration-300 border
+          ${isDarkMode ? 'bg-gradient-to-br from-green-700 to-green-900 border-white/10' : 'bg-gradient-to-br from-green-500 to-emerald-700 border-green-200'}
+        `}>
           <div className="flex items-center gap-2 mb-2">
-            <CheckCircleIcon className="w-6 h-6 text-green-300" />
-            <span className="text-sm font-semibold text-green-100">Resolved</span>
+            <CheckCircleIcon className={`w-6 h-6 ${isDarkMode ? 'text-green-300' : 'text-green-100'}`} />
+            <span className={`text-sm font-semibold ${isDarkMode ? 'text-green-100' : 'text-green-100'}`}>Resolved</span>
           </div>
           <div className="text-2xl font-bold text-white drop-shadow-lg">{stats.resolved}</div>
         </div>
-        <div className="bg-gradient-to-br from-red-700 to-pink-900 rounded-2xl shadow-2xl p-4 flex flex-col gap-2 hover:scale-[1.03] transition-transform duration-300 border border-white/10">
+        <div className={`
+          rounded-2xl shadow-2xl p-4 flex flex-col gap-2 hover:scale-[1.03] transition-transform duration-300 border
+          ${isDarkMode ? 'bg-gradient-to-br from-red-700 to-pink-900 border-white/10' : 'bg-gradient-to-br from-red-500 to-pink-700 border-red-200'}
+        `}>
           <div className="flex items-center gap-2 mb-2">
-            <ShieldExclamationIcon className="w-6 h-6 text-red-300" />
-            <span className="text-sm font-semibold text-red-100">Critical</span>
+            <ShieldExclamationIcon className={`w-6 h-6 ${isDarkMode ? 'text-red-300' : 'text-red-100'}`} />
+            <span className={`text-sm font-semibold ${isDarkMode ? 'text-red-100' : 'text-red-100'}`}>Critical</span>
           </div>
           <div className="text-2xl font-bold text-white drop-shadow-lg">{stats.critical}</div>
         </div>
-        <div className="bg-gradient-to-br from-orange-700 to-orange-900 rounded-2xl shadow-2xl p-4 flex flex-col gap-2 hover:scale-[1.03] transition-transform duration-300 border border-white/10">
+        <div className={`
+          rounded-2xl shadow-2xl p-4 flex flex-col gap-2 hover:scale-[1.03] transition-transform duration-300 border
+          ${isDarkMode ? 'bg-gradient-to-br from-orange-700 to-orange-900 border-white/10' : 'bg-gradient-to-br from-orange-500 to-orange-700 border-orange-200'}
+        `}>
           <div className="flex items-center gap-2 mb-2">
-            <ExclamationTriangleIcon className="w-6 h-6 text-orange-300" />
-            <span className="text-sm font-semibold text-orange-100">High</span>
+            <ExclamationTriangleIcon className={`w-6 h-6 ${isDarkMode ? 'text-orange-300' : 'text-orange-100'}`} />
+            <span className={`text-sm font-semibold ${isDarkMode ? 'text-orange-100' : 'text-orange-100'}`}>High</span>
           </div>
           <div className="text-2xl font-bold text-white drop-shadow-lg">{stats.high}</div>
         </div>
-        <div className="bg-gradient-to-br from-yellow-700 to-yellow-900 rounded-2xl shadow-2xl p-4 flex flex-col gap-2 hover:scale-[1.03] transition-transform duration-300 border border-white/10">
+        <div className={`
+          rounded-2xl shadow-2xl p-4 flex flex-col gap-2 hover:scale-[1.03] transition-transform duration-300 border
+          ${isDarkMode ? 'bg-gradient-to-br from-yellow-700 to-yellow-900 border-white/10' : 'bg-gradient-to-br from-yellow-500 to-yellow-700 border-yellow-200'}
+        `}>
           <div className="flex items-center gap-2 mb-2">
-            <ExclamationTriangleIcon className="w-6 h-6 text-yellow-300" />
-            <span className="text-sm font-semibold text-yellow-100">Medium</span>
+            <ExclamationTriangleIcon className={`w-6 h-6 ${isDarkMode ? 'text-yellow-300' : 'text-yellow-100'}`} />
+            <span className={`text-sm font-semibold ${isDarkMode ? 'text-yellow-100' : 'text-yellow-100'}`}>Medium</span>
           </div>
           <div className="text-2xl font-bold text-white drop-shadow-lg">{stats.medium}</div>
         </div>
@@ -318,13 +410,18 @@ const Alerts = () => {
       <div className="px-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
         <div className="flex gap-2">
           <div className="relative">
-            <MagnifyingGlassIcon className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <MagnifyingGlassIcon className={`w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`} />
             <input
               type="text"
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Search alert type or description..."
-              className="pl-10 pr-4 py-2 bg-white/10 border border-white/10 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-white placeholder:text-gray-400"
+              className={`pl-10 pr-4 py-2 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-400 transition-all duration-200
+                ${isDarkMode
+                  ? 'bg-white/10 border border-white/10 text-white placeholder:text-gray-400'
+                  : 'bg-white border border-gray-300 text-gray-800 placeholder:text-gray-500 shadow-sm hover:border-blue-400 focus:bg-white'
+                }
+              `}
             />
           </div>
         </div>
@@ -353,13 +450,16 @@ const Alerts = () => {
       {filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24">
           <BellIcon className="w-20 h-20 text-purple-900/30 mb-6" />
-          <h3 className="text-2xl font-semibold text-gray-100 mb-2">No Alerts Found</h3>
-          <p className="text-gray-400 mb-6">No alerts match your search or filter criteria.</p>
+          <h3 className={`text-2xl font-semibold ${isDarkMode ? 'text-gray-100' : 'text-gray-900'} mb-2`}>No Alerts Found</h3>
+          <p className={`mb-6 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>No alerts match your search or filter criteria.</p>
         </div>
       ) : (
-        <div className="px-8 overflow-x-auto rounded-2xl shadow-2xl bg-white/10 border border-white/10">
+        <div className={`
+          px-8 overflow-x-auto rounded-2xl shadow-2xl border transition-all duration-300
+          ${isDarkMode ? 'bg-white/10 border-white/10' : 'bg-white/80 border-white/20'}
+        `}>
           <table className="min-w-full divide-y divide-white/10 table-fixed">
-            <thead className="bg-white/5">
+            <thead className={`transition-colors duration-300 ${isDarkMode ? 'bg-white/5' : 'bg-white/40'}`}> 
               <tr>
                 <th className="px-2 py-3 text-left w-8">
                   <input
@@ -369,18 +469,18 @@ const Alerts = () => {
                     className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
                   />
                 </th>
-                <th className="px-2 py-3 text-left text-xs font-bold text-gray-300 uppercase tracking-wider w-32">Type</th>
-                <th className="px-2 py-3 text-left text-xs font-bold text-gray-300 uppercase tracking-wider w-64">Title</th>
-                <th className="px-2 py-3 text-left text-xs font-bold text-gray-300 uppercase tracking-wider w-20">Status</th>
-                <th className="px-2 py-3 text-left text-xs font-bold text-gray-300 uppercase tracking-wider w-20">Severity</th>
-                <th className="px-2 py-3 text-left text-xs font-bold text-gray-300 uppercase tracking-wider w-56">Agent</th>
-                <th className="px-2 py-3 text-left text-xs font-bold text-gray-300 uppercase tracking-wider w-40">First Detected</th>
-                <th className="px-2 py-3 text-left text-xs font-bold text-gray-300 uppercase tracking-wider w-28">Actions</th>
+                <th className="px-2 py-3 text-left text-xs font-bold uppercase tracking-wider w-32 text-gray-600">Type</th>
+                <th className="px-2 py-3 text-left text-xs font-bold uppercase tracking-wider w-64 text-gray-600">Title</th>
+                <th className="px-2 py-3 text-left text-xs font-bold uppercase tracking-wider w-20 text-gray-600">Status</th>
+                <th className="px-2 py-3 text-left text-xs font-bold uppercase tracking-wider w-20 text-gray-600">Severity</th>
+                <th className="px-2 py-3 text-left text-xs font-bold uppercase tracking-wider w-56 text-gray-600">Agent</th>
+                <th className="px-2 py-3 text-left text-xs font-bold uppercase tracking-wider w-40 text-gray-600">First Detected</th>
+                <th className="px-2 py-3 text-left text-xs font-bold uppercase tracking-wider w-28 text-gray-600">Actions</th>
               </tr>
             </thead>
-            <tbody className="bg-white/5 divide-y divide-white/10 text-sm">
+            <tbody className={`transition-colors duration-300 ${isDarkMode ? 'bg-white/5' : 'bg-white/10'} divide-y divide-white/10 text-sm`}>
               {currentAlerts.map(alert => (
-                <tr key={alert.alert_id || alert.AlertID} className="hover:bg-purple-900/30 transition-all">
+                <tr key={alert.alert_id || alert.AlertID} className={`transition-all hover:${isDarkMode ? 'bg-purple-900/30' : 'bg-indigo-100/60'}`}>
                   <td className="px-2 py-2">
                     <input
                       type="checkbox"
@@ -389,24 +489,60 @@ const Alerts = () => {
                       className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
                     />
                   </td>
-                  <td className="px-2 py-2 whitespace-normal break-all max-w-xs">{alert.alert_type}</td>
-                  <td className="px-2 py-2 whitespace-normal break-all max-w-xs">{alert.title}</td>
+                  <td className={`px-2 py-2 whitespace-normal break-all max-w-xs ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{alert.alert_type}</td>
+                  <td className={`px-2 py-2 whitespace-normal break-all max-w-xs ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{alert.title}</td>
                   <td className="px-2 py-2 whitespace-nowrap">
-                    <span className={`px-2 py-1 bg-${(alert.status || '').toLowerCase() === 'open' ? 'red' : (alert.status || '').toLowerCase() === 'investigating' ? 'yellow' : (alert.status || '').toLowerCase() === 'resolved' ? 'green' : 'gray'}-900/60 text-${(alert.status || '').toLowerCase() === 'open' ? 'red' : (alert.status || '').toLowerCase() === 'investigating' ? 'yellow' : (alert.status || '').toLowerCase() === 'resolved' ? 'green' : 'gray'}-200 rounded-full text-xs font-medium`}>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium
+                      ${isDarkMode
+                        ? ((alert.status || '').toLowerCase() === 'open'
+                            ? 'bg-red-900/60 text-red-200'
+                            : (alert.status || '').toLowerCase() === 'investigating'
+                            ? 'bg-yellow-900/60 text-yellow-200'
+                            : (alert.status || '').toLowerCase() === 'resolved'
+                            ? 'bg-green-900/60 text-green-200'
+                            : 'bg-gray-900/60 text-gray-200')
+                        : ((alert.status || '').toLowerCase() === 'open'
+                            ? 'bg-red-100 text-red-700'
+                            : (alert.status || '').toLowerCase() === 'investigating'
+                            ? 'bg-yellow-100 text-yellow-700'
+                            : (alert.status || '').toLowerCase() === 'resolved'
+                            ? 'bg-green-100 text-green-700'
+                            : 'bg-gray-200 text-gray-700')
+                    }`}>
                       {alert.status}
                     </span>
                   </td>
                   <td className="px-2 py-2 whitespace-nowrap">
-                    <span className={`px-2 py-1 bg-${(alert.severity || '').toLowerCase() === 'critical' ? 'red' : (alert.severity || '').toLowerCase() === 'high' ? 'orange' : (alert.severity || '').toLowerCase() === 'medium' ? 'yellow' : (alert.severity || '').toLowerCase() === 'low' ? 'green' : 'blue'}-900/60 text-${(alert.severity || '').toLowerCase() === 'critical' ? 'red' : (alert.severity || '').toLowerCase() === 'high' ? 'orange' : (alert.severity || '').toLowerCase() === 'medium' ? 'yellow' : (alert.severity || '').toLowerCase() === 'low' ? 'green' : 'blue'}-200 rounded-full text-xs font-medium`}>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium
+                      ${isDarkMode
+                        ? ((alert.severity || '').toLowerCase() === 'critical'
+                            ? 'bg-red-900/60 text-red-200'
+                            : (alert.severity || '').toLowerCase() === 'high'
+                            ? 'bg-orange-900/60 text-orange-200'
+                            : (alert.severity || '').toLowerCase() === 'medium'
+                            ? 'bg-yellow-900/60 text-yellow-200'
+                            : (alert.severity || '').toLowerCase() === 'low'
+                            ? 'bg-green-900/60 text-green-200'
+                            : 'bg-blue-900/60 text-blue-200')
+                        : ((alert.severity || '').toLowerCase() === 'critical'
+                            ? 'bg-red-100 text-red-700'
+                            : (alert.severity || '').toLowerCase() === 'high'
+                            ? 'bg-orange-100 text-orange-700'
+                            : (alert.severity || '').toLowerCase() === 'medium'
+                            ? 'bg-yellow-100 text-yellow-700'
+                            : (alert.severity || '').toLowerCase() === 'low'
+                            ? 'bg-green-100 text-green-700'
+                            : 'bg-blue-100 text-blue-700')
+                    }`}>
                       {alert.severity}
                     </span>
                   </td>
-                  <td className="px-2 py-2 whitespace-normal break-all max-w-xs">{alert.agent_id}</td>
-                  <td className="px-2 py-2 whitespace-normal break-all max-w-xs">{alert.first_detected}</td>
+                  <td className={`px-2 py-2 whitespace-normal break-all max-w-xs ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{alert.agent_id}</td>
+                  <td className={`px-2 py-2 whitespace-normal break-all max-w-xs ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{alert.first_detected}</td>
                   <td className="px-2 py-2 whitespace-nowrap">
                     <button
                       onClick={() => setShowDetails(alert)}
-                      className="px-4 py-1 rounded-full bg-purple-700 text-white font-medium shadow hover:bg-purple-800 transition-all duration-150 border-2 border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-500 text-xs"
+                      className={`px-4 py-1 rounded-full font-medium shadow hover:scale-105 transition-all duration-150 border-2 focus:outline-none focus:ring-2 text-xs ${isDarkMode ? 'bg-purple-700 text-white border-purple-400 hover:bg-purple-800 focus:ring-purple-500' : 'bg-blue-600 text-white border-blue-300 hover:bg-blue-700 focus:ring-blue-500'}`}
                     >
                       View Details
                     </button>

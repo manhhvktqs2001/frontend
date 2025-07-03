@@ -204,7 +204,6 @@ const Sidebar = ({ currentPath = '/', user = { role: 'admin' } }) => {
         {!isCollapsed && (
           <>
             <div className="text-xl font-extrabold bg-gradient-to-r from-purple-500 to-indigo-500 bg-clip-text text-transparent drop-shadow">EDR System</div>
-            <div className="text-xs text-gray-400 dark:text-gray-300 font-medium">{systemStats.license} • v{systemStats.version}</div>
           </>
         )}
         <button
@@ -217,10 +216,13 @@ const Sidebar = ({ currentPath = '/', user = { role: 'admin' } }) => {
       </div>
       {/* System status */}
       {!isCollapsed && (
-        <div className="px-6 py-2 flex items-center gap-3 text-xs text-gray-300 border-b border-white/10">
-          <span className={`w-2 h-2 rounded-full ${systemStats.status === 'Online' ? 'bg-green-500' : 'bg-red-500'} animate-pulse`}></span>
+        <div className={`px-6 py-3 flex items-center gap-4 border-b border-white/10 transition-colors duration-200
+          text-base font-semibold
+          ${'text-gray-700 dark:text-gray-200'}
+        `}>
+          <span className={`w-3 h-3 rounded-full ${systemStats.status === 'Online' ? 'bg-green-500' : 'bg-red-500'} animate-pulse`}></span>
           <span>{systemStats.status}</span>
-          <span className="ml-2">Agents: <span className="text-green-400 font-bold">{systemStats.agentsOnline}</span>/<span className="text-gray-400">{systemStats.agentsOnline + systemStats.agentsOffline}</span></span>
+          <span className="ml-3">Agents: <span className={`font-bold ${'text-green-600 dark:text-green-400'}`}>{systemStats.agentsOnline}</span>/<span className="text-gray-400">{systemStats.agentsOnline + systemStats.agentsOffline}</span></span>
         </div>
       )}
       {/* Menu */}
@@ -228,40 +230,57 @@ const Sidebar = ({ currentPath = '/', user = { role: 'admin' } }) => {
         {menuConfig.map(section => (
           <div key={section.section} className="mb-6">
             <div className="text-xs font-bold uppercase text-gray-400 dark:text-gray-500 px-2 mb-2 tracking-wider">{section.section}</div>
-            {section.items.map(item => (
-              <button
-                key={item.label}
-                onClick={() => handleNavigation(item.to)}
-                className={`group flex items-center gap-3 w-full px-4 py-3 my-1 rounded-xl transition-colors duration-200 relative
-                  ${isActive(item.to)
-                    ? 'bg-purple-50 text-purple-700 font-bold shadow-sm border-l-4 border-purple-500 dark:bg-purple-700 dark:text-white dark:border-l-0'
-                    : 'hover:bg-gray-100 text-gray-700 dark:text-gray-200 dark:hover:bg-white/10'}
-                `}
-                title={item.description}
-              >
-                <item.icon className={`w-6 h-6 transition-colors duration-200
-                  ${isActive(item.to)
-                    ? 'text-purple-600 dark:text-white'
-                    : 'text-gray-400 group-hover:text-purple-500 dark:text-gray-400 dark:group-hover:text-white'}
-                `} />
-                {!isCollapsed && <span className="flex-1 text-left font-semibold">{item.label}</span>}
-                {!isCollapsed && item.badge != null && (
-                  <span
-                    className={`ml-auto px-2 py-0.5 rounded-full font-bold shadow-sm text-xs transition-colors duration-200
-                      ${item.badgeColor} text-white border border-gray-300 dark:border-gray-600`}
-                  >
-                    {item.badge}
-                  </span>
-                )}
-              </button>
-            ))}
+            {section.items.map(item => {
+              let iconColor = '';
+              if (isActive(item.to)) {
+                iconColor = 'text-purple-600 dark:text-white';
+              } else {
+                switch (item.label) {
+                  case 'Dashboard': iconColor = 'text-blue-500'; break;
+                  case 'Agents': iconColor = 'text-emerald-500'; break;
+                  case 'Events': iconColor = 'text-cyan-500'; break;
+                  case 'Alerts': iconColor = 'text-purple-500'; break;
+                  case 'Rules': iconColor = 'text-yellow-500'; break;
+                  case 'Threats': iconColor = 'text-orange-500'; break;
+                  case 'Threat Hunt': iconColor = 'text-pink-500'; break;
+                  case 'Network': iconColor = 'text-sky-500'; break;
+                  case 'Settings': iconColor = 'text-gray-500'; break;
+                  default: iconColor = 'text-gray-400 dark:text-gray-400';
+                }
+              }
+              return (
+                <button
+                  key={item.label}
+                  onClick={() => handleNavigation(item.to)}
+                  className={`group flex items-center gap-3 w-full px-4 py-3 my-1 rounded-xl transition-colors duration-200 relative
+                    ${isActive(item.to)
+                      ? 'bg-purple-50 text-purple-700 font-bold shadow-sm border-l-4 border-purple-500 dark:bg-purple-700 dark:text-white dark:border-l-0'
+                      : 'hover:bg-gray-100 text-gray-700 dark:text-gray-200 dark:hover:bg-white/10'}
+                  `}
+                  title={item.description}
+                >
+                  <item.icon className={`w-6 h-6 transition-colors duration-200 ${iconColor} group-hover:scale-110`} />
+                  {!isCollapsed && <span className="flex-1 text-left font-semibold">{item.label}</span>}
+                  {!isCollapsed && item.badge != null && (
+                    <span
+                      className={`ml-auto px-2 py-0.5 rounded-full font-bold shadow-sm text-xs transition-colors duration-200
+                        ${item.badgeColor} text-white border border-gray-300 dark:border-gray-600`}
+                    >
+                      {item.badge}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
         ))}
       </nav>
       {/* Footer */}
       <div className="p-4 border-t border-white/10 text-xs text-gray-400 flex flex-col gap-2 items-center">
-        <div className="flex items-center gap-2">
-          <LockClosedIcon className="w-4 h-4" />
+        <div className={`flex items-center gap-2 text-base font-semibold transition-colors duration-200
+          ${'text-gray-600 dark:text-gray-200'}
+        `}>
+          <LockClosedIcon className={`w-5 h-5 ${'text-gray-500 dark:text-gray-300'}`} />
           <span>Secured by EDR</span>
         </div>
       </div>

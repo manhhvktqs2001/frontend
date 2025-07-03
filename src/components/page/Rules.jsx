@@ -29,6 +29,7 @@ import { Listbox } from '@headlessui/react';
 import { CheckIcon, ChevronUpDownIcon } from '@heroicons/react/20/solid';
 import { createDetectionRule, updateDetectionRule, deleteDetectionRule } from '../../service/rules-api';
 import RuleCreator from '../common/RuleCreator';
+import { useTheme } from '../../contexts/ThemeContext';
 // axios import removed - will be handled by parent component
 
 const severityMap = {
@@ -50,6 +51,7 @@ function insertAtCursor(textarea, value) {
 }
 
 const Rules = () => {
+  const { isDarkMode, isTransitioning } = useTheme();
   const [rules, setRules] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -566,14 +568,22 @@ const Rules = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-indigo-950 to-purple-950">
+      <div className={`min-h-screen flex items-center justify-center transition-all duration-300
+        ${isDarkMode
+          ? 'bg-gradient-to-br from-slate-900 via-indigo-950 to-purple-950'
+          : 'bg-gradient-to-br from-white via-blue-50 to-purple-100'}
+      `}>
         <div className="text-center">
           <div className="relative">
-            <div className="w-20 h-20 border-4 border-purple-200 rounded-full animate-spin"></div>
-            <div className="w-20 h-20 border-4 border-purple-600 border-t-transparent rounded-full animate-spin absolute top-0"></div>
+            <div className={`w-20 h-20 border-4 rounded-full animate-spin
+              ${isDarkMode ? 'border-purple-200' : 'border-purple-300'}
+            `}></div>
+            <div className={`w-20 h-20 border-4 border-t-transparent rounded-full animate-spin absolute top-0
+              ${isDarkMode ? 'border-purple-600' : 'border-blue-400'}
+            `}></div>
           </div>
-          <h3 className="mt-6 text-xl font-semibold text-gray-100">Loading Rules...</h3>
-          <p className="mt-2 text-gray-400">Fetching detection rules...</p>
+          <h3 className={`mt-6 text-xl font-semibold ${isDarkMode ? 'text-gray-100' : 'text-gray-700'}`}>Loading Rules...</h3>
+          <p className={`mt-2 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Fetching detection rules...</p>
         </div>
       </div>
     );
@@ -596,40 +606,94 @@ const Rules = () => {
 
   // Always show search/filter bar, even if no data
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-950 to-purple-950 text-white">
+    <div className={`
+      min-h-screen transition-all duration-300
+      ${isDarkMode 
+        ? 'bg-gradient-to-br from-slate-900 via-indigo-950 to-purple-950 text-white' 
+        : 'bg-gradient-to-br from-blue-50 via-white to-indigo-50 text-gray-900'
+      }
+      ${isTransitioning ? 'theme-transitioning' : ''}
+    `}>
       {/* Header & Stats */}
-      <div className="px-8 py-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-white/10 bg-white/10 backdrop-blur-xl shadow-lg sticky top-0 z-20">
+      <div className={`
+        px-8 py-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4 
+        border-b shadow-lg sticky top-0 z-20 backdrop-blur-xl transition-all duration-300
+        ${isDarkMode 
+          ? 'border-white/10 bg-white/10' 
+          : 'border-gray-200/50 bg-white/80'
+        }
+      `}>
         <div className="flex items-center gap-4">
-          <BoltIcon className="w-10 h-10 text-purple-400 drop-shadow-lg" />
+          <BoltIcon className={`
+            w-10 h-10 drop-shadow-lg transition-colors duration-300
+            ${isDarkMode ? 'text-purple-400' : 'text-blue-600'}
+          `} />
           <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-indigo-400 bg-clip-text text-transparent tracking-tight">Detection Rules</h1>
-            <p className="text-gray-300 text-sm mt-1">Manage and configure detection rules</p>
+            <h1 className={`
+              text-3xl font-bold tracking-tight transition-colors duration-300
+              ${isDarkMode 
+                ? 'bg-gradient-to-r from-purple-400 to-indigo-400 bg-clip-text text-transparent' 
+                : 'bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent'
+              }
+            `}>
+              Detection Rules
+            </h1>
+            <p className={`
+              text-sm mt-1 transition-colors duration-300
+              ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}
+            `}>
+              Manage and configure detection rules
+            </p>
           </div>
         </div>
         <div className="flex items-center gap-4">
           <button
             onClick={fetchRulesData}
             disabled={loading}
-            className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium disabled:opacity-50 shadow-lg"
+            className={`
+              flex items-center gap-2 px-4 py-2 rounded-lg font-medium disabled:opacity-50 shadow-lg
+              transition-all duration-200 hover:scale-105
+              ${isDarkMode 
+                ? 'bg-purple-600 text-white hover:bg-purple-700' 
+                : 'bg-blue-600 text-white hover:bg-blue-700'
+              }
+            `}
           >
             <ArrowPathIcon className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
             Refresh
           </button>
           <button
             onClick={exportRules}
-            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium shadow-lg"
+            className={`
+              flex items-center gap-2 px-4 py-2 rounded-lg font-medium shadow-lg
+              transition-all duration-200 hover:scale-105
+              ${isDarkMode 
+                ? 'bg-green-600 text-white hover:bg-green-700' 
+                : 'bg-green-600 text-white hover:bg-green-700'
+              }
+            `}
           >
             <ArrowDownTrayIcon className="w-5 h-5" />
             Export
           </button>
           <button
             onClick={() => setShowCreateModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium shadow-lg"
+            className={`
+              flex items-center gap-2 px-4 py-2 rounded-lg font-medium shadow-lg
+              transition-all duration-200 hover:scale-105
+              ${isDarkMode 
+                ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                : 'bg-blue-600 text-white hover:bg-blue-700'
+              }
+            `}
           >
             <PlusIcon className="w-5 h-5" />
             Tạo Rule
           </button>
-          <div className="flex items-center gap-2 text-sm text-gray-200">
+          <div className={`
+            flex items-center gap-2 text-sm transition-colors duration-300
+            ${isDarkMode ? 'text-gray-200' : 'text-gray-600'}
+          `}>
             <ClockIcon className="w-4 h-4" />
             <span>Last updated: {lastUpdated.toLocaleTimeString()}</span>
           </div>
@@ -638,52 +702,73 @@ const Rules = () => {
 
       {/* Stats Cards */}
       <div className="p-8 grid grid-cols-2 md:grid-cols-8 gap-4">
-        <div className="bg-gradient-to-br from-purple-700 to-purple-900 rounded-2xl shadow-2xl p-4 flex flex-col gap-2 hover:scale-[1.03] transition-transform duration-300 border border-white/10">
+        <div className={`
+          rounded-2xl shadow-2xl p-4 flex flex-col gap-2 hover:scale-[1.03] transition-transform duration-300 border
+          ${isDarkMode ? 'bg-gradient-to-br from-purple-700 to-purple-900 border-white/10' : 'bg-gradient-to-br from-purple-500 to-purple-700 border-purple-200'}
+        `}>
           <div className="flex items-center gap-2 mb-2">
-            <BoltIcon className="w-6 h-6 text-purple-300" />
-            <span className="text-sm font-semibold text-purple-100">Total</span>
+            <BoltIcon className={`w-6 h-6 ${isDarkMode ? 'text-purple-300' : 'text-purple-100'}`} />
+            <span className={`text-sm font-semibold ${isDarkMode ? 'text-purple-100' : 'text-purple-100'}`}>Total</span>
           </div>
           <div className="text-2xl font-bold text-white drop-shadow-lg">{calculatedStats.total}</div>
         </div>
-        <div className="bg-gradient-to-br from-green-700 to-green-900 rounded-2xl shadow-2xl p-4 flex flex-col gap-2 hover:scale-[1.03] transition-transform duration-300 border border-white/10">
+        <div className={`
+          rounded-2xl shadow-2xl p-4 flex flex-col gap-2 hover:scale-[1.03] transition-transform duration-300 border
+          ${isDarkMode ? 'bg-gradient-to-br from-green-700 to-green-900 border-white/10' : 'bg-gradient-to-br from-green-500 to-emerald-700 border-green-200'}
+        `}>
           <div className="flex items-center gap-2 mb-2">
-            <CheckCircleIcon className="w-6 h-6 text-green-300" />
-            <span className="text-sm font-semibold text-green-100">Active</span>
+            <CheckCircleIcon className={`w-6 h-6 ${isDarkMode ? 'text-green-300' : 'text-green-100'}`} />
+            <span className={`text-sm font-semibold ${isDarkMode ? 'text-green-100' : 'text-green-100'}`}>Active</span>
           </div>
           <div className="text-2xl font-bold text-white drop-shadow-lg">{calculatedStats.active}</div>
         </div>
-        <div className="bg-gradient-to-br from-gray-700 to-gray-900 rounded-2xl shadow-2xl p-4 flex flex-col gap-2 hover:scale-[1.03] transition-transform duration-300 border border-white/10">
+        <div className={`
+          rounded-2xl shadow-2xl p-4 flex flex-col gap-2 hover:scale-[1.03] transition-transform duration-300 border
+          ${isDarkMode ? 'bg-gradient-to-br from-gray-700 to-gray-900 border-white/10' : 'bg-gradient-to-br from-gray-400 to-gray-600 border-gray-200'}
+        `}>
           <div className="flex items-center gap-2 mb-2">
-            <XCircleIcon className="w-6 h-6 text-gray-300" />
-            <span className="text-sm font-semibold text-gray-100">Inactive</span>
+            <XCircleIcon className={`w-6 h-6 ${isDarkMode ? 'text-gray-300' : 'text-gray-100'}`} />
+            <span className={`text-sm font-semibold ${isDarkMode ? 'text-gray-100' : 'text-gray-100'}`}>Inactive</span>
           </div>
           <div className="text-2xl font-bold text-white drop-shadow-lg">{calculatedStats.inactive}</div>
         </div>
-        <div className="bg-gradient-to-br from-blue-700 to-blue-900 rounded-2xl shadow-2xl p-4 flex flex-col gap-2 hover:scale-[1.03] transition-transform duration-300 border border-white/10">
+        <div className={`
+          rounded-2xl shadow-2xl p-4 flex flex-col gap-2 hover:scale-[1.03] transition-transform duration-300 border
+          ${isDarkMode ? 'bg-gradient-to-br from-blue-700 to-blue-900 border-white/10' : 'bg-gradient-to-br from-blue-500 to-blue-700 border-blue-200'}
+        `}>
           <div className="flex items-center gap-2 mb-2">
-            <BoltIcon className="w-6 h-6 text-blue-300" />
-            <span className="text-sm font-semibold text-blue-100">Behavioral</span>
+            <BoltIcon className={`w-6 h-6 ${isDarkMode ? 'text-blue-300' : 'text-blue-100'}`} />
+            <span className={`text-sm font-semibold ${isDarkMode ? 'text-blue-100' : 'text-blue-100'}`}>Behavioral</span>
           </div>
           <div className="text-2xl font-bold text-white drop-shadow-lg">{calculatedStats.behavioral}</div>
         </div>
-        <div className="bg-gradient-to-br from-green-700 to-emerald-900 rounded-2xl shadow-2xl p-4 flex flex-col gap-2 hover:scale-[1.03] transition-transform duration-300 border border-white/10">
+        <div className={`
+          rounded-2xl shadow-2xl p-4 flex flex-col gap-2 hover:scale-[1.03] transition-transform duration-300 border
+          ${isDarkMode ? 'bg-gradient-to-br from-green-700 to-emerald-900 border-white/10' : 'bg-gradient-to-br from-green-500 to-emerald-700 border-green-200'}
+        `}>
           <div className="flex items-center gap-2 mb-2">
-            <DocumentTextIcon className="w-6 h-6 text-green-300" />
-            <span className="text-sm font-semibold text-green-100">Signature</span>
+            <DocumentTextIcon className={`w-6 h-6 ${isDarkMode ? 'text-green-300' : 'text-green-100'}`} />
+            <span className={`text-sm font-semibold ${isDarkMode ? 'text-green-100' : 'text-green-100'}`}>Signature</span>
           </div>
           <div className="text-2xl font-bold text-white drop-shadow-lg">{calculatedStats.signature}</div>
         </div>
-        <div className="bg-gradient-to-br from-orange-700 to-yellow-900 rounded-2xl shadow-2xl p-4 flex flex-col gap-2 hover:scale-[1.03] transition-transform duration-300 border border-white/10">
+        <div className={`
+          rounded-2xl shadow-2xl p-4 flex flex-col gap-2 hover:scale-[1.03] transition-transform duration-300 border
+          ${isDarkMode ? 'bg-gradient-to-br from-orange-700 to-yellow-900 border-white/10' : 'bg-gradient-to-br from-orange-500 to-yellow-500 border-yellow-200'}
+        `}>
           <div className="flex items-center gap-2 mb-2">
-            <BoltIcon className="w-6 h-6 text-orange-300" />
-            <span className="text-sm font-semibold text-orange-100">Threshold</span>
+            <BoltIcon className={`w-6 h-6 ${isDarkMode ? 'text-orange-300' : 'text-orange-100'}`} />
+            <span className={`text-sm font-semibold ${isDarkMode ? 'text-orange-100' : 'text-orange-100'}`}>Threshold</span>
           </div>
           <div className="text-2xl font-bold text-white drop-shadow-lg">{calculatedStats.threshold}</div>
         </div>
-        <div className="bg-gradient-to-br from-purple-700 to-violet-900 rounded-2xl shadow-2xl p-4 flex flex-col gap-2 hover:scale-[1.03] transition-transform duration-300 border border-white/10">
+        <div className={`
+          rounded-2xl shadow-2xl p-4 flex flex-col gap-2 hover:scale-[1.03] transition-transform duration-300 border
+          ${isDarkMode ? 'bg-gradient-to-br from-purple-700 to-violet-900 border-white/10' : 'bg-gradient-to-br from-purple-500 to-violet-700 border-purple-200'}
+        `}>
           <div className="flex items-center gap-2 mb-2">
-            <ShieldCheckIcon className="w-6 h-6 text-purple-300" />
-            <span className="text-sm font-semibold text-purple-100">Correlation</span>
+            <ShieldCheckIcon className={`w-6 h-6 ${isDarkMode ? 'text-purple-300' : 'text-purple-100'}`} />
+            <span className={`text-sm font-semibold ${isDarkMode ? 'text-purple-100' : 'text-purple-100'}`}>Correlation</span>
           </div>
           <div className="text-2xl font-bold text-white drop-shadow-lg">{calculatedStats.correlation}</div>
         </div>
@@ -693,19 +778,29 @@ const Rules = () => {
       <div className="px-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
         <div className="flex gap-2">
           <div className="relative">
-            <MagnifyingGlassIcon className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <MagnifyingGlassIcon className={`w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`} />
             <input
               type="text"
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Search rule name, title, or MITRE tactic..."
-              className="pl-10 pr-4 py-2 bg-white/10 border border-white/10 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-white placeholder:text-gray-400"
+              className={`pl-10 pr-4 py-2 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-400 transition-all duration-200
+                ${isDarkMode
+                  ? 'bg-white/10 border border-white/10 text-white placeholder:text-gray-400'
+                  : 'bg-white border border-gray-300 text-gray-800 placeholder:text-gray-500 shadow-sm hover:border-blue-400 focus:bg-white'
+                }
+              `}
             />
           </div>
           <select
             value={filterType}
             onChange={e => setFilterType(e.target.value)}
-            className="px-4 py-2 bg-white/10 border border-white/10 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-white"
+            className={`px-4 py-2 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-400 transition-all duration-200
+              ${isDarkMode
+                ? 'bg-white/10 border border-white/10 text-white'
+                : 'bg-white border border-gray-300 text-gray-800 font-semibold shadow-sm hover:border-blue-400 focus:bg-white'
+              }
+            `}
           >
             <option value="All">All Types</option>
             <option value="Behavioral">Behavioral</option>
@@ -716,7 +811,12 @@ const Rules = () => {
           <select
             value={filterSeverity}
             onChange={e => setFilterSeverity(e.target.value)}
-            className="px-4 py-2 bg-white/10 border border-white/10 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-white"
+            className={`px-4 py-2 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-400 transition-all duration-200
+              ${isDarkMode
+                ? 'bg-white/10 border border-white/10 text-white'
+                : 'bg-white border border-gray-300 text-gray-800 font-semibold shadow-sm hover:border-blue-400 focus:bg-white'
+              }
+            `}
           >
             <option value="All">All Severity</option>
             <option value="Critical">Critical</option>
@@ -727,7 +827,12 @@ const Rules = () => {
           <select
             value={filterStatus}
             onChange={e => setFilterStatus(e.target.value)}
-            className="px-4 py-2 bg-white/10 border border-white/10 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-white"
+            className={`px-4 py-2 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-400 transition-all duration-200
+              ${isDarkMode
+                ? 'bg-white/10 border border-white/10 text-white'
+                : 'bg-white border border-gray-300 text-gray-800 font-semibold shadow-sm hover:border-blue-400 focus:bg-white'
+              }
+            `}
           >
             <option value="All">All Status</option>
             <option value="Active">Active</option>
@@ -747,13 +852,16 @@ const Rules = () => {
       {filteredRules.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24">
           <BoltIcon className="w-20 h-20 text-purple-900/30 mb-6" />
-          <h3 className="text-2xl font-semibold text-gray-100 mb-2">No Rules Found</h3>
-          <p className="text-gray-400 mb-6">No rules match your search or filter criteria.</p>
+          <h3 className={`text-2xl font-semibold ${isDarkMode ? 'text-gray-100' : 'text-gray-900'} mb-2`}>No Rules Found</h3>
+          <p className={`mb-6 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>No rules match your search or filter criteria.</p>
         </div>
       ) : (
-        <div className="px-8 overflow-x-auto rounded-2xl shadow-2xl bg-white/10 border border-white/10">
+        <div className={`
+          px-8 overflow-x-auto rounded-2xl shadow-2xl border transition-all duration-300
+          ${isDarkMode ? 'bg-white/10 border-white/10' : 'bg-white/80 border-white/20'}
+        `}>
           <table className="min-w-full divide-y divide-white/10">
-            <thead className="bg-white/5">
+            <thead className={`transition-colors duration-300 ${isDarkMode ? 'bg-white/5' : 'bg-white/40'}`}> 
               <tr>
                 <th className="px-6 py-3 text-left">
                   <input
@@ -763,22 +871,34 @@ const Rules = () => {
                     className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
                   />
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-gray-300 uppercase tracking-wider">Rule</th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-gray-300 uppercase tracking-wider">Type</th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-gray-300 uppercase tracking-wider">Severity</th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-gray-300 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-gray-300 uppercase tracking-wider">Platform</th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-gray-300 uppercase tracking-wider">Actions</th>
+                <th className={`px-6 py-3 text-left text-xs font-bold uppercase tracking-wider
+                  ${isDarkMode ? 'text-gray-600' : 'text-gray-700'}
+                `}>Rule</th>
+                <th className={`px-6 py-3 text-left text-xs font-bold uppercase tracking-wider
+                  ${isDarkMode ? 'text-gray-600' : 'text-gray-700'}
+                `}>Type</th>
+                <th className={`px-6 py-3 text-left text-xs font-bold uppercase tracking-wider
+                  ${isDarkMode ? 'text-gray-600' : 'text-gray-700'}
+                `}>Severity</th>
+                <th className={`px-6 py-3 text-left text-xs font-bold uppercase tracking-wider
+                  ${isDarkMode ? 'text-gray-600' : 'text-gray-700'}
+                `}>Status</th>
+                <th className={`px-6 py-3 text-left text-xs font-bold uppercase tracking-wider
+                  ${isDarkMode ? 'text-gray-600' : 'text-gray-700'}
+                `}>Platform</th>
+                <th className={`px-6 py-3 text-left text-xs font-bold uppercase tracking-wider
+                  ${isDarkMode ? 'text-gray-600' : 'text-gray-700'}
+                `}>Actions</th>
               </tr>
             </thead>
-            <tbody className="bg-white/5 divide-y divide-white/10">
+            <tbody className={`transition-colors duration-300 ${isDarkMode ? 'bg-white/5' : 'bg-white/10'} divide-y divide-white/10`}> 
               {currentRules.map(rule => {
                 const typeInfo = getRuleTypeInfo(rule.rule_type || rule.RuleType);
                 const severityInfo = getSeverityInfo(rule.alert_severity || rule.AlertSeverity);
                 const isActive = rule.is_active === true || rule.IsActive === true;
                 
                 return (
-                  <tr key={rule.rule_id || rule.RuleID} className="hover:bg-purple-900/30 transition-all">
+                  <tr key={rule.rule_id || rule.RuleID} className={`transition-all hover:${isDarkMode ? 'bg-purple-900/30' : 'bg-indigo-100/60'}`}>
                     <td className="px-6 py-4">
                       <input
                         type="checkbox"
@@ -787,20 +907,57 @@ const Rules = () => {
                         className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
                       />
                     </td>
-                    <td className="px-6 py-4">
+                    <td className={`px-6 py-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}> 
                       <div>
-                        <div className="font-medium text-white">{rule.rule_name || rule.RuleName}</div>
-                        <div className="text-sm text-gray-300">{rule.alert_title || rule.AlertTitle}</div>
+                        <div className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{rule.rule_name || rule.RuleName}</div>
+                        <div className={`${isDarkMode ? 'text-gray-300' : 'text-gray-600'} text-sm`}>{rule.alert_title || rule.AlertTitle}</div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${typeInfo.bg} ${typeInfo.color}`}>
-                        <typeInfo.icon className="w-3 h-3 mr-1" />
+                      <span className={`inline-flex items-center px-4 py-1.5 rounded-full text-xs font-bold shadow-md transition-all duration-200 hover:scale-105
+                        ${isDarkMode
+                          ? typeInfo.bg + ' ' + typeInfo.color
+                          : (typeInfo.label === 'Behavioral'
+                              ? 'bg-blue-100 text-blue-700'
+                              : typeInfo.label === 'Signature'
+                              ? 'bg-green-100 text-green-700'
+                              : typeInfo.label === 'Threshold'
+                              ? 'bg-orange-100 text-orange-700'
+                              : typeInfo.label === 'Correlation'
+                              ? 'bg-purple-100 text-purple-700'
+                              : 'bg-gray-200 text-gray-700')
+                        }
+                      `}>
+                        <typeInfo.icon className={`w-4 h-4 mr-1 ${isDarkMode
+                          ? typeInfo.color
+                          : (typeInfo.label === 'Behavioral'
+                              ? 'text-blue-500'
+                              : typeInfo.label === 'Signature'
+                              ? 'text-green-500'
+                              : typeInfo.label === 'Threshold'
+                              ? 'text-orange-500'
+                              : typeInfo.label === 'Correlation'
+                              ? 'text-purple-500'
+                              : 'text-gray-400')
+                        }`} />
                         {typeInfo.label}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${severityInfo.bg} ${severityInfo.text}`}>
+                      <span className={`inline-flex items-center px-4 py-1.5 rounded-full text-xs font-bold shadow-md transition-all duration-200 hover:scale-105
+                        ${isDarkMode
+                          ? severityInfo.bg + ' ' + severityInfo.text
+                          : (severityInfo.label === 'Critical'
+                              ? 'bg-red-100 text-red-700'
+                              : severityInfo.label === 'High'
+                              ? 'bg-orange-100 text-orange-700'
+                              : severityInfo.label === 'Medium'
+                              ? 'bg-yellow-100 text-yellow-700'
+                              : severityInfo.label === 'Low'
+                              ? 'bg-green-100 text-green-700'
+                              : 'bg-gray-200 text-gray-700')
+                        }
+                      `}>
                         {severityInfo.label}
                       </span>
                     </td>
@@ -837,9 +994,27 @@ const Rules = () => {
                         </span>
                       </button>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-gray-200">
-                      <span className="text-lg">{getPlatformIcon(rule.platform || rule.Platform)}</span>
-                      <span className="ml-2 text-sm">{rule.platform || rule.Platform}</span>
+                    <td className={`px-6 py-4 whitespace-nowrap transition-colors duration-300
+                      ${isDarkMode ? 'text-white' : 'text-gray-700'}
+                    `}>
+                      <span className={`
+                        text-2xl align-middle
+                        ${isDarkMode ? 'drop-shadow-lg' : 'drop-shadow-sm'}
+                        ${((rule.platform || rule.Platform || '').toLowerCase().includes('windows')) 
+                          ? (isDarkMode ? 'text-blue-300' : 'text-blue-600') 
+                          : ((rule.platform || rule.Platform || '').toLowerCase().includes('linux'))
+                            ? (isDarkMode ? 'text-emerald-200' : 'text-emerald-600')
+                            : (isDarkMode ? 'text-gray-200' : 'text-gray-500')
+                        }
+                      `}>
+                        {getPlatformIcon(rule.platform || rule.Platform)}
+                      </span>
+                      <span className={`
+                        ml-2 text-base font-semibold
+                        ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}
+                      `}>
+                        {rule.platform || rule.Platform}
+                      </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap flex gap-2">
                       <button
@@ -908,41 +1083,73 @@ const Rules = () => {
       {/* Rule Details Modal */}
       {showDetails && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-gradient-to-br from-slate-900 via-indigo-950 to-purple-950 border border-white/10 rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto relative animate-fadeIn">
-            <div className="flex items-center justify-between p-6 border-b border-white/10">
+          <div className={`max-w-3xl w-full max-h-[90vh] overflow-y-auto relative animate-fadeIn
+            rounded-2xl shadow-2xl border transition-all duration-300
+            ${isDarkMode
+              ? 'bg-gradient-to-br from-slate-900 via-indigo-950 to-purple-950 border-white/10 text-white'
+              : 'bg-white border-gray-200 text-gray-900'}
+          `}>
+            <div className={`flex items-center justify-between p-6 border-b transition-colors duration-300
+              ${isDarkMode ? 'border-white/10' : 'border-gray-200'}
+            `}>
               <div className="flex items-center gap-3">
-                <EyeIcon className="w-8 h-8 text-purple-400" />
-                <h2 className="text-2xl font-bold text-white">Rule Details</h2>
+                <EyeIcon className={`w-8 h-8 ${isDarkMode ? 'text-purple-400' : 'text-purple-600'}`} />
+                <h2 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Rule Details</h2>
               </div>
               <button
                 onClick={() => setShowDetails(null)}
                 className="p-2 rounded-lg hover:bg-purple-900/40 transition-colors group"
                 aria-label="Close details"
               >
-                <XCircleIcon className="w-7 h-7 text-gray-300 group-hover:text-red-400 transition-colors" />
+                <XCircleIcon className={`w-7 h-7 transition-colors ${isDarkMode ? 'text-gray-300 group-hover:text-red-400' : 'text-gray-400 group-hover:text-red-500'}`} />
               </button>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6">
               <div className="space-y-4">
-                <div><span className="block text-xs text-gray-400 font-semibold uppercase mb-1">Name</span><span className="text-lg font-bold text-purple-300">{showDetails.rule_name || showDetails.RuleName}</span></div>
-                <div><span className="block text-xs text-gray-400 font-semibold uppercase mb-1">Type</span><span className="text-base text-white">{showDetails.rule_type || showDetails.RuleType}</span></div>
-                <div><span className="block text-xs text-gray-400 font-semibold uppercase mb-1">Severity</span><span className={`inline-block px-3 py-1 rounded-full text-xs font-bold bg-${(showDetails.alert_severity || showDetails.AlertSeverity || '').toLowerCase() === 'critical' ? 'red' : (showDetails.alert_severity || showDetails.AlertSeverity || '').toLowerCase() === 'high' ? 'orange' : (showDetails.alert_severity || showDetails.AlertSeverity || '').toLowerCase() === 'medium' ? 'yellow' : (showDetails.alert_severity || showDetails.AlertSeverity || '').toLowerCase() === 'low' ? 'green' : 'blue'}-900/60 text-${(showDetails.alert_severity || showDetails.AlertSeverity || '').toLowerCase() === 'critical' ? 'red' : (showDetails.alert_severity || showDetails.AlertSeverity || '').toLowerCase() === 'high' ? 'orange' : (showDetails.alert_severity || showDetails.AlertSeverity || '').toLowerCase() === 'medium' ? 'yellow' : (showDetails.alert_severity || showDetails.AlertSeverity || '').toLowerCase() === 'low' ? 'green' : 'blue'}-200`}>{showDetails.alert_severity || showDetails.AlertSeverity}</span></div>
-                <div><span className="block text-xs text-gray-400 font-semibold uppercase mb-1">Status</span><span className="text-base text-white">{(showDetails.is_active === true || showDetails.IsActive === true) ? 'Active' : 'Inactive'}</span></div>
-                <div><span className="block text-xs text-gray-400 font-semibold uppercase mb-1">Platform</span><span className="text-base text-white">{showDetails.platform || showDetails.Platform}</span></div>
-                <div><span className="block text-xs text-gray-400 font-semibold uppercase mb-1">Alert Title</span><span className="text-base text-white">{showDetails.alert_title || showDetails.AlertTitle}</span></div>
+                <div><span className={`block text-xs font-semibold uppercase mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Name</span><span className={`text-lg font-bold ${isDarkMode ? 'text-purple-300' : 'text-purple-700'}`}>{showDetails.rule_name || showDetails.RuleName}</span></div>
+                <div><span className={`block text-xs font-semibold uppercase mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Type</span><span className={`text-base ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{showDetails.rule_type || showDetails.RuleType}</span></div>
+                <div><span className={`block text-xs font-semibold uppercase mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Severity</span><span className={`inline-block px-3 py-1 rounded-full text-xs font-bold shadow-md border transition-all duration-200
+                  ${isDarkMode
+                    ? ((showDetails.alert_severity || showDetails.AlertSeverity || '').toLowerCase() === 'critical'
+                        ? 'bg-red-900/60 text-red-200 border-red-700'
+                        : (showDetails.alert_severity || showDetails.AlertSeverity || '').toLowerCase() === 'high'
+                        ? 'bg-orange-900/60 text-orange-200 border-orange-700'
+                        : (showDetails.alert_severity || showDetails.AlertSeverity || '').toLowerCase() === 'medium'
+                        ? 'bg-yellow-900/60 text-yellow-200 border-yellow-700'
+                        : (showDetails.alert_severity || showDetails.AlertSeverity || '').toLowerCase() === 'low'
+                        ? 'bg-green-900/60 text-green-200 border-green-700'
+                        : 'bg-blue-900/60 text-blue-200 border-blue-700')
+                    : ((showDetails.alert_severity || showDetails.AlertSeverity || '').toLowerCase() === 'critical'
+                        ? 'bg-red-100 text-red-700 border-red-300'
+                        : (showDetails.alert_severity || showDetails.AlertSeverity || '').toLowerCase() === 'high'
+                        ? 'bg-orange-100 text-orange-700 border-orange-300'
+                        : (showDetails.alert_severity || showDetails.AlertSeverity || '').toLowerCase() === 'medium'
+                        ? 'bg-yellow-100 text-yellow-700 border-yellow-300'
+                        : (showDetails.alert_severity || showDetails.AlertSeverity || '').toLowerCase() === 'low'
+                        ? 'bg-green-100 text-green-700 border-green-300'
+                        : 'bg-blue-100 text-blue-700 border-blue-300')
+                  }
+                `}>{showDetails.alert_severity || showDetails.AlertSeverity}</span></div>
+                <div><span className={`block text-xs font-semibold uppercase mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Status</span><span className={`text-base font-semibold ${isDarkMode ? 'text-white' : 'text-green-700'}`}>{(showDetails.is_active === true || showDetails.IsActive === true) ? 'Active' : 'Inactive'}</span></div>
+                <div><span className={`block text-xs font-semibold uppercase mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Platform</span><span className={`text-base ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{showDetails.platform || showDetails.Platform}</span></div>
+                <div><span className={`block text-xs font-semibold uppercase mb-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Alert Title</span><span className={`text-base ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{showDetails.alert_title || showDetails.AlertTitle}</span></div>
               </div>
               <div className="flex flex-col gap-2">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-semibold text-gray-300">Raw Rule Data</span>
+                  <span className={`text-sm font-semibold ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Raw Rule Data</span>
                   <button
-                    className="px-2 py-1 text-xs bg-purple-700 text-white rounded hover:bg-purple-800 transition-colors"
+                    className={`px-2 py-1 text-xs rounded font-semibold transition-colors
+                      ${isDarkMode ? 'bg-purple-700 text-white hover:bg-purple-800' : 'bg-purple-600 text-white hover:bg-purple-700 shadow'}
+                    `}
                     onClick={() => {
                       navigator.clipboard.writeText(JSON.stringify(showDetails, null, 2));
                     }}
                   >Copy JSON</button>
                 </div>
-                <div className="bg-black/60 rounded-lg p-3 overflow-x-auto max-h-60 border border-white/10">
-                  <pre className="text-xs text-purple-100 font-mono whitespace-pre-wrap">{JSON.stringify(showDetails, null, 2)}</pre>
+                <div className={`rounded-lg p-3 overflow-x-auto max-h-60 border text-xs font-mono whitespace-pre-wrap
+                  ${isDarkMode ? 'bg-black/60 border-white/10 text-purple-100' : 'bg-gray-100 border-gray-200 text-purple-900'}
+                `}>
+                  <pre>{JSON.stringify(showDetails, null, 2)}</pre>
                 </div>
               </div>
             </div>
@@ -1374,21 +1581,28 @@ const Rules = () => {
         </div>
       )}
 
-      {/* Modal chỉnh sửa Rule */}
+      {/* Modal chỉnh sửa Rule - FIX TEXT VISIBILITY */}
       {showEditModal && editRule && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-gradient-to-br from-slate-900 via-indigo-950 to-purple-950 border border-white/10 rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto relative animate-fadeIn">
-            <div className="flex items-center justify-between p-6 border-b border-white/10">
+          <div className={`max-w-3xl w-full max-h-[90vh] overflow-y-auto relative animate-fadeIn
+            rounded-2xl shadow-2xl border transition-all duration-300
+            ${isDarkMode
+              ? 'bg-gradient-to-br from-slate-900 via-indigo-950 to-purple-950 border-white/10 text-white'
+              : 'bg-white border-gray-200 text-gray-900'}
+          `}>
+            <div className={`flex items-center justify-between p-6 border-b transition-colors duration-300
+              ${isDarkMode ? 'border-white/10' : 'border-gray-200'}
+            `}>
               <div className="flex items-center gap-3">
-                <PencilIcon className="w-8 h-8 text-blue-400" />
-                <h2 className="text-2xl font-bold text-white">Edit Detection Rule</h2>
+                <PencilIcon className={`w-8 h-8 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`} />
+                <h2 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Edit Detection Rule</h2>
               </div>
               <button
                 onClick={() => { setShowEditModal(false); setEditRule(null); }}
                 className="p-2 rounded-lg hover:bg-purple-900/40 transition-colors group"
                 aria-label="Close edit"
               >
-                <XCircleIcon className="w-7 h-7 text-gray-300 group-hover:text-red-400 transition-colors" />
+                <XCircleIcon className={`w-7 h-7 transition-colors ${isDarkMode ? 'text-gray-300 group-hover:text-red-400' : 'text-gray-400 group-hover:text-red-500'}`} />
               </button>
             </div>
             <form className="px-8 py-8" onSubmit={async (e) => {
@@ -1398,22 +1612,43 @@ const Rules = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-6">
                   <div>
-                    <label className="block text-base font-bold text-gray-200 mb-2">Rule Name <span className="text-red-400">*</span></label>
-                    <input type="text" required value={editRule.rule_name || ''} onChange={e => setEditRule(r => ({...r, rule_name: e.target.value}))} className="w-full px-5 py-4 rounded-xl bg-white/20 border-2 border-purple-400 focus:border-blue-400 text-white placeholder:text-gray-400 text-lg shadow transition-all duration-200" placeholder="Enter rule name" />
+                    <label className={`block text-base font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Rule Name <span className="text-red-400">*</span></label>
+                    <input 
+                      type="text" 
+                      required 
+                      value={editRule.rule_name || ''} 
+                      onChange={e => setEditRule(r => ({...r, rule_name: e.target.value}))}
+                      className={`w-full px-5 py-4 rounded-xl text-lg shadow-sm transition-all duration-200
+                        focus:ring-2 focus:ring-purple-500 focus:border-purple-400
+                        ${isDarkMode
+                          ? 'bg-white/20 border-2 border-purple-400 text-white placeholder:text-gray-300'
+                          : 'bg-white border border-gray-300 text-gray-900 font-semibold placeholder:text-gray-500'}
+                      `}
+                      placeholder="Enter rule name"
+                    />
                   </div>
                   <div>
-                    <label className="block text-base font-bold text-gray-200 mb-2">Rule Type</label>
+                    <label className={`block text-base font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Rule Type</label>
                     <Listbox value={editRule.rule_type || editRule.RuleType || ''} onChange={val => setEditRule(r => ({...r, rule_type: val}))}>
                       {({ open }) => (
                         <div className="relative">
-                          <Listbox.Button className="w-full px-4 py-3 rounded-lg bg-white/20 border-2 border-purple-400 text-white text-base shadow flex justify-between items-center focus:outline-none focus:ring-2 focus:ring-purple-500">
+                          <Listbox.Button className={`w-full px-4 py-3 rounded-lg border-2 text-base shadow flex justify-between items-center focus:outline-none focus:ring-2 focus:ring-purple-500
+                            ${isDarkMode 
+                              ? 'bg-white/20 border-purple-400 text-white' 
+                              : 'bg-white border-gray-300 text-gray-900 font-semibold'}
+                          `}>
                             {editRule.rule_type || editRule.RuleType || 'Chọn loại Rule'}
-                            <ChevronUpDownIcon className="w-5 h-5 ml-2 text-purple-200" />
+                            <ChevronUpDownIcon className={`w-5 h-5 ml-2 ${isDarkMode ? 'text-purple-200' : 'text-gray-500'}`} />
                           </Listbox.Button>
                           {open && (
-                            <Listbox.Options className="absolute z-50 mt-1 w-full bg-black border border-purple-500 rounded-xl shadow-2xl max-h-60 overflow-auto">
+                            <Listbox.Options className={`absolute z-50 mt-1 w-full border rounded-xl shadow-2xl max-h-60 overflow-auto
+                              ${isDarkMode ? 'bg-slate-900 border-purple-500' : 'bg-white border-gray-300'}
+                            `}>
                               {['Behavioral','Signature','Threshold','Correlation'].map(opt => (
-                                <Listbox.Option key={opt} value={opt} className={({ active, selected }) => `cursor-pointer select-none px-4 py-2 ${active ? 'bg-purple-700 text-white' : 'text-white'} ${selected ? 'font-bold' : ''}` }>
+                                <Listbox.Option key={opt} value={opt} className={({ active, selected }) => `cursor-pointer select-none px-4 py-2 
+                                  ${active ? (isDarkMode ? 'bg-purple-700 text-white' : 'bg-blue-100 text-blue-900') : (isDarkMode ? 'text-white' : 'text-gray-900')} 
+                                  ${selected ? 'font-bold' : ''}` 
+                                }>
                                   {({ selected }) => (
                                     <div className="flex items-center gap-2">
                                       {selected && <CheckIcon className="w-4 h-4 text-green-400" />}
@@ -1429,18 +1664,27 @@ const Rules = () => {
                     </Listbox>
                   </div>
                   <div>
-                    <label className="block text-base font-bold text-gray-200 mb-2">Platform</label>
+                    <label className={`block text-base font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Platform</label>
                     <Listbox value={editRule.platform || editRule.Platform || ''} onChange={val => setEditRule(r => ({...r, platform: val}))}>
                       {({ open }) => (
                         <div className="relative">
-                          <Listbox.Button className="w-full px-4 py-3 rounded-lg bg-white/20 border-2 border-purple-400 text-white text-base shadow flex justify-between items-center focus:outline-none focus:ring-2 focus:ring-purple-500">
+                          <Listbox.Button className={`w-full px-4 py-3 rounded-lg border-2 text-base shadow flex justify-between items-center focus:outline-none focus:ring-2 focus:ring-purple-500
+                            ${isDarkMode 
+                              ? 'bg-white/20 border-purple-400 text-white' 
+                              : 'bg-white border-gray-300 text-gray-900 font-semibold'}
+                          `}>
                             {editRule.platform || editRule.Platform || 'Chọn nền tảng'}
-                            <ChevronUpDownIcon className="w-5 h-5 ml-2 text-purple-200" />
+                            <ChevronUpDownIcon className={`w-5 h-5 ml-2 ${isDarkMode ? 'text-purple-200' : 'text-gray-500'}`} />
                           </Listbox.Button>
                           {open && (
-                            <Listbox.Options className="absolute z-50 mt-1 w-full bg-black border border-purple-500 rounded-xl shadow-2xl max-h-60 overflow-auto">
+                            <Listbox.Options className={`absolute z-50 mt-1 w-full border rounded-xl shadow-2xl max-h-60 overflow-auto
+                              ${isDarkMode ? 'bg-slate-900 border-purple-500' : 'bg-white border-gray-300'}
+                            `}>
                               {['All','Windows','Linux'].map(opt => (
-                                <Listbox.Option key={opt} value={opt} className={({ active, selected }) => `cursor-pointer select-none px-4 py-2 ${active ? 'bg-purple-700 text-white' : 'text-white'} ${selected ? 'font-bold' : ''}` }>
+                                <Listbox.Option key={opt} value={opt} className={({ active, selected }) => `cursor-pointer select-none px-4 py-2 
+                                  ${active ? (isDarkMode ? 'bg-purple-700 text-white' : 'bg-blue-100 text-blue-900') : (isDarkMode ? 'text-white' : 'text-gray-900')} 
+                                  ${selected ? 'font-bold' : ''}` 
+                                }>
                                   {({ selected }) => (
                                     <div className="flex items-center gap-2">
                                       {selected && <CheckIcon className="w-4 h-4 text-green-400" />}
@@ -1456,37 +1700,89 @@ const Rules = () => {
                     </Listbox>
                   </div>
                   <div>
-                    <label className="block text-base font-bold text-gray-200 mb-2">Description</label>
-                    <textarea value={editRule.description || ''} onChange={e => setEditRule(r => ({...r, description: e.target.value}))} className="w-full px-5 py-4 rounded-xl bg-white/20 border-2 border-purple-400 focus:border-blue-400 text-white placeholder:text-gray-400 text-lg shadow transition-all duration-200" placeholder="Describe what this rule detects" rows={3} />
+                    <label className={`block text-base font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Description</label>
+                    <textarea 
+                      value={editRule.description || ''} 
+                      onChange={e => setEditRule(r => ({...r, description: e.target.value}))} 
+                      className={`w-full px-5 py-4 rounded-xl text-lg shadow transition-all duration-200
+                        focus:ring-2 focus:ring-purple-500 focus:border-purple-400
+                        ${isDarkMode
+                          ? 'bg-white/20 border-2 border-purple-400 text-white placeholder:text-gray-300'
+                          : 'bg-white border border-gray-300 text-gray-900 placeholder:text-gray-500'}
+                      `} 
+                      placeholder="Describe what this rule detects" 
+                      rows={3} 
+                    />
                   </div>
                   <div>
-                    <label className="block text-base font-bold text-gray-200 mb-2">Priority</label>
-                    <input type="number" min={1} max={100} value={editRule.priority || editRule.Priority || 50} onChange={e => setEditRule(r => ({...r, priority: Number(e.target.value)}))} className="w-full px-5 py-4 rounded-xl bg-white/20 border-2 border-purple-400 focus:border-blue-400 text-white placeholder:text-gray-400 text-lg shadow transition-all duration-200" placeholder="Priority (1-100)" />
+                    <label className={`block text-base font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Priority</label>
+                    <input 
+                      type="number" 
+                      min={1} 
+                      max={100} 
+                      value={editRule.priority || editRule.Priority || 50} 
+                      onChange={e => setEditRule(r => ({...r, priority: Number(e.target.value)}))} 
+                      className={`w-full px-5 py-4 rounded-xl text-lg shadow transition-all duration-200
+                        focus:ring-2 focus:ring-purple-500 focus:border-purple-400
+                        ${isDarkMode
+                          ? 'bg-white/20 border-2 border-purple-400 text-white placeholder:text-gray-300'
+                          : 'bg-white border border-gray-300 text-gray-900 placeholder:text-gray-500'}
+                      `} 
+                      placeholder="Priority (1-100)" 
+                    />
                   </div>
                   <div>
-                    <label className="block text-base font-bold text-gray-200 mb-2">Test Mode</label>
-                    <input type="checkbox" checked={editRule.test_mode === true || editRule.TestMode === true} onChange={e => setEditRule(r => ({...r, test_mode: e.target.checked}))} className="w-5 h-5 rounded border-purple-400 focus:ring-purple-500" />
-                    <span className="ml-2 text-base text-gray-200 font-medium">Enable test mode</span>
+                    <label className={`block text-base font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Test Mode</label>
+                    <div className="flex items-center gap-3">
+                      <input 
+                        type="checkbox" 
+                        checked={editRule.test_mode === true || editRule.TestMode === true} 
+                        onChange={e => setEditRule(r => ({...r, test_mode: e.target.checked}))} 
+                        className="w-5 h-5 rounded border-purple-400 focus:ring-purple-500" 
+                      />
+                      <span className={`text-base font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Enable test mode</span>
+                    </div>
                   </div>
                 </div>
                 <div className="space-y-6">
                   <div>
-                    <label className="block text-base font-bold text-gray-200 mb-2">Alert Title <span className="text-red-400">*</span></label>
-                    <input type="text" required value={editRule.alert_title || ''} onChange={e => setEditRule(r => ({...r, alert_title: e.target.value}))} className="w-full px-5 py-4 rounded-xl bg-white/20 border-2 border-purple-400 focus:border-blue-400 text-white placeholder:text-gray-400 text-lg shadow transition-all duration-200" placeholder="Alert title when rule triggers" />
+                    <label className={`block text-base font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Alert Title <span className="text-red-400">*</span></label>
+                    <input 
+                      type="text" 
+                      required 
+                      value={editRule.alert_title || ''} 
+                      onChange={e => setEditRule(r => ({...r, alert_title: e.target.value}))} 
+                      className={`w-full px-5 py-4 rounded-xl text-lg shadow transition-all duration-200
+                        focus:ring-2 focus:ring-purple-500 focus:border-purple-400
+                        ${isDarkMode
+                          ? 'bg-white/20 border-2 border-purple-400 text-white placeholder:text-gray-300'
+                          : 'bg-white border border-gray-300 text-gray-900 placeholder:text-gray-500'}
+                      `} 
+                      placeholder="Alert title when rule triggers" 
+                    />
                   </div>
                   <div>
-                    <label className="block text-base font-bold text-gray-200 mb-2">Severity</label>
+                    <label className={`block text-base font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Severity</label>
                     <Listbox value={editRule.alert_severity || editRule.AlertSeverity || ''} onChange={val => setEditRule(r => ({...r, alert_severity: val}))}>
                       {({ open }) => (
                         <div className="relative">
-                          <Listbox.Button className="w-full px-4 py-3 rounded-lg bg-white/20 border-2 border-purple-400 text-white text-base shadow flex justify-between items-center focus:outline-none focus:ring-2 focus:ring-purple-500">
+                          <Listbox.Button className={`w-full px-4 py-3 rounded-lg border-2 text-base shadow flex justify-between items-center focus:outline-none focus:ring-2 focus:ring-purple-500
+                            ${isDarkMode 
+                              ? 'bg-white/20 border-purple-400 text-white' 
+                              : 'bg-white border-gray-300 text-gray-900 font-semibold'}
+                          `}>
                             {editRule.alert_severity || editRule.AlertSeverity || 'Chọn mức độ'}
-                            <ChevronUpDownIcon className="w-5 h-5 ml-2 text-purple-200" />
+                            <ChevronUpDownIcon className={`w-5 h-5 ml-2 ${isDarkMode ? 'text-purple-200' : 'text-gray-500'}`} />
                           </Listbox.Button>
                           {open && (
-                            <Listbox.Options className="absolute z-50 mt-1 w-full bg-black border border-purple-500 rounded-xl shadow-2xl max-h-60 overflow-auto">
+                            <Listbox.Options className={`absolute z-50 mt-1 w-full border rounded-xl shadow-2xl max-h-60 overflow-auto
+                              ${isDarkMode ? 'bg-slate-900 border-purple-500' : 'bg-white border-gray-300'}
+                            `}>
                               {['Critical','High','Medium','Low'].map(opt => (
-                                <Listbox.Option key={opt} value={opt} className={({ active, selected }) => `cursor-pointer select-none px-4 py-2 ${active ? 'bg-purple-700 text-white' : 'text-white'} ${selected ? 'font-bold' : ''}` }>
+                                <Listbox.Option key={opt} value={opt} className={({ active, selected }) => `cursor-pointer select-none px-4 py-2 
+                                  ${active ? (isDarkMode ? 'bg-purple-700 text-white' : 'bg-blue-100 text-blue-900') : (isDarkMode ? 'text-white' : 'text-gray-900')} 
+                                  ${selected ? 'font-bold' : ''}` 
+                                }>
                                   {({ selected }) => (
                                     <div className="flex items-center gap-2">
                                       {selected && <CheckIcon className="w-4 h-4 text-green-400" />}
@@ -1502,18 +1798,27 @@ const Rules = () => {
                     </Listbox>
                   </div>
                   <div>
-                    <label className="block text-base font-bold text-gray-200 mb-2">Alert Type</label>
+                    <label className={`block text-base font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Alert Type</label>
                     <Listbox value={editRule.alert_type || editRule.AlertType || ''} onChange={val => setEditRule(r => ({...r, alert_type: val}))}>
                       {({ open }) => (
                         <div className="relative">
-                          <Listbox.Button className="w-full px-4 py-3 rounded-lg bg-white/20 border-2 border-purple-400 text-white text-base shadow flex justify-between items-center focus:outline-none focus:ring-2 focus:ring-purple-500">
+                          <Listbox.Button className={`w-full px-4 py-3 rounded-lg border-2 text-base shadow flex justify-between items-center focus:outline-none focus:ring-2 focus:ring-purple-500
+                            ${isDarkMode 
+                              ? 'bg-white/20 border-purple-400 text-white' 
+                              : 'bg-white border-gray-300 text-gray-900 font-semibold'}
+                          `}>
                             {editRule.alert_type || editRule.AlertType || 'Chọn loại cảnh báo...'}
-                            <ChevronUpDownIcon className="w-5 h-5 ml-2 text-purple-200" />
+                            <ChevronUpDownIcon className={`w-5 h-5 ml-2 ${isDarkMode ? 'text-purple-200' : 'text-gray-500'}`} />
                           </Listbox.Button>
                           {open && (
-                            <Listbox.Options className="absolute z-50 mt-1 w-full bg-black border border-purple-500 rounded-xl shadow-2xl max-h-60 overflow-auto">
+                            <Listbox.Options className={`absolute z-50 mt-1 w-full border rounded-xl shadow-2xl max-h-60 overflow-auto
+                              ${isDarkMode ? 'bg-slate-900 border-purple-500' : 'bg-white border-gray-300'}
+                            `}>
                               {['Credential Access','Execution','Persistence','Defense Evasion','Discovery','Lateral Movement','Collection','Exfiltration','Command and Control','Impact','Initial Access','Privilege Escalation','Reconnaissance','Resource Development'].map(opt => (
-                                <Listbox.Option key={opt} value={opt} className={({ active, selected }) => `cursor-pointer select-none px-4 py-2 ${active ? 'bg-purple-700 text-white' : 'text-white'} ${selected ? 'font-bold' : ''}` }>
+                                <Listbox.Option key={opt} value={opt} className={({ active, selected }) => `cursor-pointer select-none px-4 py-2 
+                                  ${active ? (isDarkMode ? 'bg-purple-700 text-white' : 'bg-blue-100 text-blue-900') : (isDarkMode ? 'text-white' : 'text-gray-900')} 
+                                  ${selected ? 'font-bold' : ''}` 
+                                }>
                                   {({ selected }) => (
                                     <div className="flex items-center gap-2">
                                       {selected && <CheckIcon className="w-4 h-4 text-green-400" />}
@@ -1529,18 +1834,27 @@ const Rules = () => {
                     </Listbox>
                   </div>
                   <div>
-                    <label className="block text-base font-bold text-gray-200 mb-2">MITRE Tactic</label>
+                    <label className={`block text-base font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>MITRE Tactic</label>
                     <Listbox value={editRule.mitre_tactic || editRule.MitreTactic || ''} onChange={val => setEditRule(r => ({...r, mitre_tactic: val}))}>
                       {({ open }) => (
                         <div className="relative">
-                          <Listbox.Button className="w-full px-4 py-3 rounded-lg bg-white/20 border-2 border-purple-400 text-white text-base shadow flex justify-between items-center focus:outline-none focus:ring-2 focus:ring-purple-500">
+                          <Listbox.Button className={`w-full px-4 py-3 rounded-lg border-2 text-base shadow flex justify-between items-center focus:outline-none focus:ring-2 focus:ring-purple-500
+                            ${isDarkMode 
+                              ? 'bg-white/20 border-purple-400 text-white' 
+                              : 'bg-white border-gray-300 text-gray-900 font-semibold'}
+                          `}>
                             {editRule.mitre_tactic || editRule.MitreTactic || 'Chọn tactic...'}
-                            <ChevronUpDownIcon className="w-5 h-5 ml-2 text-purple-200" />
+                            <ChevronUpDownIcon className={`w-5 h-5 ml-2 ${isDarkMode ? 'text-purple-200' : 'text-gray-500'}`} />
                           </Listbox.Button>
                           {open && (
-                            <Listbox.Options className="absolute z-50 mt-1 w-full bg-black border border-purple-500 rounded-xl shadow-2xl max-h-60 overflow-auto">
+                            <Listbox.Options className={`absolute z-50 mt-1 w-full border rounded-xl shadow-2xl max-h-60 overflow-auto
+                              ${isDarkMode ? 'bg-slate-900 border-purple-500' : 'bg-white border-gray-300'}
+                            `}>
                               {['Credential Access','Execution','Persistence','Defense Evasion','Discovery','Lateral Movement','Collection','Exfiltration','Command and Control','Impact','Initial Access','Privilege Escalation','Reconnaissance','Resource Development'].map(opt => (
-                                <Listbox.Option key={opt} value={opt} className={({ active, selected }) => `cursor-pointer select-none px-4 py-2 ${active ? 'bg-purple-700 text-white' : 'text-white'} ${selected ? 'font-bold' : ''}` }>
+                                <Listbox.Option key={opt} value={opt} className={({ active, selected }) => `cursor-pointer select-none px-4 py-2 
+                                  ${active ? (isDarkMode ? 'bg-purple-700 text-white' : 'bg-blue-100 text-blue-900') : (isDarkMode ? 'text-white' : 'text-gray-900')} 
+                                  ${selected ? 'font-bold' : ''}` 
+                                }>
                                   {({ selected }) => (
                                     <div className="flex items-center gap-2">
                                       {selected && <CheckIcon className="w-4 h-4 text-green-400" />}
@@ -1556,19 +1870,55 @@ const Rules = () => {
                     </Listbox>
                   </div>
                   <div>
-                    <label className="block text-base font-bold text-gray-200 mb-2">MITRE Technique <span className="text-red-400">*</span></label>
-                    <input type="text" required value={editRule.mitre_technique || editRule.MitreTechnique || ''} onChange={e => setEditRule(r => ({...r, mitre_technique: e.target.value}))} className="w-full px-5 py-4 rounded-xl bg-white/20 border-2 border-purple-400 focus:border-blue-400 text-white placeholder:text-gray-400 text-lg shadow transition-all duration-200" placeholder="Chọn MITRE Technique hoặc nhập tự do" />
+                    <label className={`block text-base font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>MITRE Technique <span className="text-red-400">*</span></label>
+                    <input 
+                      type="text" 
+                      required 
+                      value={editRule.mitre_technique || editRule.MitreTechnique || ''} 
+                      onChange={e => setEditRule(r => ({...r, mitre_technique: e.target.value}))} 
+                      className={`w-full px-5 py-4 rounded-xl text-lg shadow transition-all duration-200
+                        focus:ring-2 focus:ring-purple-500 focus:border-purple-400
+                        ${isDarkMode
+                          ? 'bg-white/20 border-2 border-purple-400 text-white placeholder:text-gray-300'
+                          : 'bg-white border border-gray-300 text-gray-900 placeholder:text-gray-500'}
+                      `} 
+                      placeholder="Chọn MITRE Technique hoặc nhập tự do" 
+                    />
                   </div>
                 </div>
               </div>
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mt-8 border-t border-white/10 pt-6">
                 <div className="flex items-center gap-3">
-                  <input type="checkbox" checked={editRule.is_active === true || editRule.IsActive === true} onChange={e => setEditRule(r => ({...r, is_active: e.target.checked}))} className="w-5 h-5 rounded border-purple-400 focus:ring-purple-500" />
-                  <span className="text-base text-gray-200 font-medium">Enable rule immediately</span>
+                  <input 
+                    type="checkbox" 
+                    checked={editRule.is_active === true || editRule.IsActive === true} 
+                    onChange={e => setEditRule(r => ({...r, is_active: e.target.checked}))} 
+                    className="w-5 h-5 rounded border-purple-400 focus:ring-purple-500" 
+                  />
+                  <span className={`text-base font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Enable rule immediately</span>
                 </div>
                 <div className="flex gap-3 mt-4 md:mt-0">
-                  <button type="button" onClick={() => { setShowEditModal(false); setEditRule(null); }} className="px-6 py-3 rounded-xl bg-gray-200 text-gray-700 font-semibold hover:bg-gray-300 transition-all shadow">Cancel</button>
-                  <button type="submit" className="px-6 py-3 rounded-xl bg-purple-600 text-white font-bold hover:bg-purple-700 transition-all shadow">Save Changes</button>
+                  <button 
+                    type="button" 
+                    onClick={() => { setShowEditModal(false); setEditRule(null); }} 
+                    className={`px-6 py-3 rounded-xl font-semibold transition-all shadow
+                      ${isDarkMode 
+                        ? 'bg-gray-600 text-white hover:bg-gray-700' 
+                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}
+                    `}
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    type="submit" 
+                    className={`px-6 py-3 rounded-xl font-bold transition-all shadow
+                      ${isDarkMode 
+                        ? 'bg-purple-600 text-white hover:bg-purple-700' 
+                        : 'bg-purple-600 text-white hover:bg-purple-700'}
+                    `}
+                  >
+                    Save Changes
+                  </button>
                 </div>
               </div>
             </form>

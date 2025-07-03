@@ -20,6 +20,7 @@ import {
   CpuChipIcon
 } from '@heroicons/react/24/outline';
 import { fetchThreats } from '../../service/api';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const severityMap = {
   critical: 'text-red-400',
@@ -29,6 +30,7 @@ const severityMap = {
 };
 
 const Threats = () => {
+  const { isDarkMode, isTransitioning } = useTheme();
   const [threats, setThreats] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -312,33 +314,80 @@ const Threats = () => {
 
   // Always show search/filter bar, even if no data
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-950 to-purple-950 text-white">
+    <div className={`
+      min-h-screen transition-all duration-300
+      ${isDarkMode 
+        ? 'bg-gradient-to-br from-slate-900 via-indigo-950 to-purple-950 text-white' 
+        : 'bg-gradient-to-br from-blue-50 via-white to-indigo-50 text-gray-900'
+      }
+      ${isTransitioning ? 'theme-transitioning' : ''}
+    `}>
       {/* Header & Stats */}
-      <div className="px-8 py-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-white/10 bg-white/10 backdrop-blur-xl shadow-lg sticky top-0 z-20">
+      <div className={`
+        px-8 py-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4 
+        border-b shadow-lg sticky top-0 z-20 backdrop-blur-xl transition-all duration-300
+        ${isDarkMode 
+          ? 'border-white/10 bg-white/10' 
+          : 'border-gray-200/50 bg-white/80'
+        }
+      `}>
         <div className="flex items-center gap-4">
-          <ShieldCheckIcon className="w-10 h-10 text-purple-400 drop-shadow-lg" />
+          <ShieldCheckIcon className={`
+            w-10 h-10 drop-shadow-lg transition-colors duration-300
+            ${isDarkMode ? 'text-purple-400' : 'text-blue-600'}
+          `} />
           <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-indigo-400 bg-clip-text text-transparent tracking-tight">Threat Intelligence</h1>
-            <p className="text-gray-300 text-sm mt-1">Monitor and manage threat indicators</p>
+            <h1 className={`
+              text-3xl font-bold tracking-tight transition-colors duration-300
+              ${isDarkMode 
+                ? 'bg-gradient-to-r from-purple-400 to-indigo-400 bg-clip-text text-transparent' 
+                : 'bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent'
+              }
+            `}>
+              Threat Intelligence
+            </h1>
+            <p className={`
+              text-sm mt-1 transition-colors duration-300
+              ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}
+            `}>
+              Monitor and manage threat indicators
+            </p>
           </div>
         </div>
         <div className="flex items-center gap-4">
           <button
             onClick={fetchThreatsData}
             disabled={loading}
-            className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium disabled:opacity-50 shadow-lg"
+            className={`
+              flex items-center gap-2 px-4 py-2 rounded-lg font-medium disabled:opacity-50 shadow-lg
+              transition-all duration-200 hover:scale-105
+              ${isDarkMode 
+                ? 'bg-purple-600 text-white hover:bg-purple-700' 
+                : 'bg-blue-600 text-white hover:bg-blue-700'
+              }
+            `}
           >
             <ArrowPathIcon className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
             Refresh
           </button>
           <button
             onClick={exportThreats}
-            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium shadow-lg"
+            className={`
+              flex items-center gap-2 px-4 py-2 rounded-lg font-medium shadow-lg
+              transition-all duration-200 hover:scale-105
+              ${isDarkMode 
+                ? 'bg-green-600 text-white hover:bg-green-700' 
+                : 'bg-green-600 text-white hover:bg-green-700'
+              }
+            `}
           >
             <ArrowDownTrayIcon className="w-5 h-5" />
             Export
           </button>
-          <div className="flex items-center gap-2 text-sm text-gray-200">
+          <div className={`
+            flex items-center gap-2 text-sm transition-colors duration-300
+            ${isDarkMode ? 'text-gray-200' : 'text-gray-600'}
+          `}>
             <ClockIcon className="w-4 h-4" />
             <span>Last updated: {lastUpdated.toLocaleTimeString()}</span>
           </div>
@@ -347,59 +396,83 @@ const Threats = () => {
 
       {/* Stats Cards */}
       <div className="p-8 grid grid-cols-2 md:grid-cols-8 gap-4">
-        <div className="bg-gradient-to-br from-purple-700 to-purple-900 rounded-2xl shadow-2xl p-4 flex flex-col gap-2 hover:scale-[1.03] transition-transform duration-300 border border-white/10">
+        <div className={`
+          rounded-2xl shadow-2xl p-4 flex flex-col gap-2 hover:scale-[1.03] transition-transform duration-300 border
+          ${isDarkMode ? 'bg-gradient-to-br from-purple-700 to-purple-900 border-white/10' : 'bg-gradient-to-br from-purple-500 to-purple-700 border-purple-200'}
+        `}>
           <div className="flex items-center gap-2 mb-2">
-            <ShieldCheckIcon className="w-6 h-6 text-purple-300" />
-            <span className="text-sm font-semibold text-purple-100">Total</span>
+            <ShieldCheckIcon className={`w-6 h-6 ${isDarkMode ? 'text-purple-300' : 'text-purple-100'}`} />
+            <span className={`text-sm font-semibold ${isDarkMode ? 'text-purple-100' : 'text-purple-100'}`}>Total</span>
           </div>
           <div className="text-2xl font-bold text-white drop-shadow-lg">{calculatedStats.total}</div>
         </div>
-        <div className="bg-gradient-to-br from-green-700 to-green-900 rounded-2xl shadow-2xl p-4 flex flex-col gap-2 hover:scale-[1.03] transition-transform duration-300 border border-white/10">
+        <div className={`
+          rounded-2xl shadow-2xl p-4 flex flex-col gap-2 hover:scale-[1.03] transition-transform duration-300 border
+          ${isDarkMode ? 'bg-gradient-to-br from-green-700 to-green-900 border-white/10' : 'bg-gradient-to-br from-green-500 to-emerald-700 border-green-200'}
+        `}>
           <div className="flex items-center gap-2 mb-2">
-            <CheckCircleIcon className="w-6 h-6 text-green-300" />
-            <span className="text-sm font-semibold text-green-100">Active</span>
+            <CheckCircleIcon className={`w-6 h-6 ${isDarkMode ? 'text-green-300' : 'text-green-100'}`} />
+            <span className={`text-sm font-semibold ${isDarkMode ? 'text-green-100' : 'text-green-100'}`}>Active</span>
           </div>
           <div className="text-2xl font-bold text-white drop-shadow-lg">{calculatedStats.active}</div>
         </div>
-        <div className="bg-gradient-to-br from-gray-700 to-gray-900 rounded-2xl shadow-2xl p-4 flex flex-col gap-2 hover:scale-[1.03] transition-transform duration-300 border border-white/10">
+        <div className={`
+          rounded-2xl shadow-2xl p-4 flex flex-col gap-2 hover:scale-[1.03] transition-transform duration-300 border
+          ${isDarkMode ? 'bg-gradient-to-br from-gray-700 to-gray-900 border-white/10' : 'bg-gradient-to-br from-gray-400 to-gray-600 border-gray-200'}
+        `}>
           <div className="flex items-center gap-2 mb-2">
-            <XCircleIcon className="w-6 h-6 text-gray-300" />
-            <span className="text-sm font-semibold text-gray-100">Inactive</span>
+            <XCircleIcon className={`w-6 h-6 ${isDarkMode ? 'text-gray-300' : 'text-gray-100'}`} />
+            <span className={`text-sm font-semibold ${isDarkMode ? 'text-gray-100' : 'text-gray-100'}`}>Inactive</span>
           </div>
           <div className="text-2xl font-bold text-white drop-shadow-lg">{calculatedStats.inactive}</div>
         </div>
-        <div className="bg-gradient-to-br from-blue-700 to-blue-900 rounded-2xl shadow-2xl p-4 flex flex-col gap-2 hover:scale-[1.03] transition-transform duration-300 border border-white/10">
+        <div className={`
+          rounded-2xl shadow-2xl p-4 flex flex-col gap-2 hover:scale-[1.03] transition-transform duration-300 border
+          ${isDarkMode ? 'bg-gradient-to-br from-blue-700 to-blue-900 border-white/10' : 'bg-gradient-to-br from-blue-500 to-blue-700 border-blue-200'}
+        `}>
           <div className="flex items-center gap-2 mb-2">
-            <HashtagIcon className="w-6 h-6 text-blue-300" />
-            <span className="text-sm font-semibold text-blue-100">Hash</span>
+            <HashtagIcon className={`w-6 h-6 ${isDarkMode ? 'text-blue-300' : 'text-blue-100'}`} />
+            <span className={`text-sm font-semibold ${isDarkMode ? 'text-blue-100' : 'text-blue-100'}`}>Hash</span>
           </div>
           <div className="text-2xl font-bold text-white drop-shadow-lg">{calculatedStats.hash}</div>
         </div>
-        <div className="bg-gradient-to-br from-red-700 to-red-900 rounded-2xl shadow-2xl p-4 flex flex-col gap-2 hover:scale-[1.03] transition-transform duration-300 border border-white/10">
+        <div className={`
+          rounded-2xl shadow-2xl p-4 flex flex-col gap-2 hover:scale-[1.03] transition-transform duration-300 border
+          ${isDarkMode ? 'bg-gradient-to-br from-red-700 to-red-900 border-white/10' : 'bg-gradient-to-br from-red-500 to-red-700 border-red-200'}
+        `}>
           <div className="flex items-center gap-2 mb-2">
-            <GlobeAltIcon className="w-6 h-6 text-red-300" />
-            <span className="text-sm font-semibold text-red-100">IP</span>
+            <GlobeAltIcon className={`w-6 h-6 ${isDarkMode ? 'text-red-300' : 'text-red-100'}`} />
+            <span className={`text-sm font-semibold ${isDarkMode ? 'text-red-100' : 'text-red-100'}`}>IP</span>
           </div>
           <div className="text-2xl font-bold text-white drop-shadow-lg">{calculatedStats.ip}</div>
         </div>
-        <div className="bg-gradient-to-br from-purple-700 to-violet-900 rounded-2xl shadow-2xl p-4 flex flex-col gap-2 hover:scale-[1.03] transition-transform duration-300 border border-white/10">
+        <div className={`
+          rounded-2xl shadow-2xl p-4 flex flex-col gap-2 hover:scale-[1.03] transition-transform duration-300 border
+          ${isDarkMode ? 'bg-gradient-to-br from-purple-700 to-violet-900 border-white/10' : 'bg-gradient-to-br from-purple-500 to-violet-700 border-purple-200'}
+        `}>
           <div className="flex items-center gap-2 mb-2">
-            <GlobeAltIcon className="w-6 h-6 text-purple-300" />
-            <span className="text-sm font-semibold text-purple-100">Domain</span>
+            <GlobeAltIcon className={`w-6 h-6 ${isDarkMode ? 'text-purple-300' : 'text-purple-100'}`} />
+            <span className={`text-sm font-semibold ${isDarkMode ? 'text-purple-100' : 'text-purple-100'}`}>Domain</span>
           </div>
           <div className="text-2xl font-bold text-white drop-shadow-lg">{calculatedStats.domain}</div>
         </div>
-        <div className="bg-gradient-to-br from-orange-700 to-yellow-900 rounded-2xl shadow-2xl p-4 flex flex-col gap-2 hover:scale-[1.03] transition-transform duration-300 border border-white/10">
+        <div className={`
+          rounded-2xl shadow-2xl p-4 flex flex-col gap-2 hover:scale-[1.03] transition-transform duration-300 border
+          ${isDarkMode ? 'bg-gradient-to-br from-orange-700 to-yellow-900 border-white/10' : 'bg-gradient-to-br from-orange-500 to-yellow-500 border-yellow-200'}
+        `}>
           <div className="flex items-center gap-2 mb-2">
-            <GlobeAltIcon className="w-6 h-6 text-orange-300" />
-            <span className="text-sm font-semibold text-orange-100">URL</span>
+            <GlobeAltIcon className={`w-6 h-6 ${isDarkMode ? 'text-orange-300' : 'text-orange-100'}`} />
+            <span className={`text-sm font-semibold ${isDarkMode ? 'text-orange-100' : 'text-orange-100'}`}>URL</span>
           </div>
           <div className="text-2xl font-bold text-white drop-shadow-lg">{calculatedStats.url}</div>
         </div>
-        <div className="bg-gradient-to-br from-green-700 to-emerald-900 rounded-2xl shadow-2xl p-4 flex flex-col gap-2 hover:scale-[1.03] transition-transform duration-300 border border-white/10">
+        <div className={`
+          rounded-2xl shadow-2xl p-4 flex flex-col gap-2 hover:scale-[1.03] transition-transform duration-300 border
+          ${isDarkMode ? 'bg-gradient-to-br from-green-700 to-emerald-900 border-white/10' : 'bg-gradient-to-br from-green-500 to-emerald-700 border-green-200'}
+        `}>
           <div className="flex items-center gap-2 mb-2">
-            <DocumentIcon className="w-6 h-6 text-green-300" />
-            <span className="text-sm font-semibold text-green-100">Signature</span>
+            <DocumentIcon className={`w-6 h-6 ${isDarkMode ? 'text-green-300' : 'text-green-100'}`} />
+            <span className={`text-sm font-semibold ${isDarkMode ? 'text-green-100' : 'text-green-100'}`}>Signature</span>
           </div>
           <div className="text-2xl font-bold text-white drop-shadow-lg">{calculatedStats.signature}</div>
         </div>
@@ -409,13 +482,18 @@ const Threats = () => {
       <div className="px-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
         <div className="flex gap-2">
           <div className="relative">
-            <MagnifyingGlassIcon className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <MagnifyingGlassIcon className={`w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`} />
             <input
               type="text"
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Search threat name or value..."
-              className="pl-10 pr-4 py-2 bg-white/10 border border-white/10 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-white placeholder:text-gray-400"
+              className={`pl-10 pr-4 py-2 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-400 transition-all duration-200
+                ${isDarkMode
+                  ? 'bg-white/10 border border-white/10 text-white placeholder:text-gray-400'
+                  : 'bg-white border border-gray-300 text-gray-800 placeholder:text-gray-500 shadow-sm hover:border-blue-400 focus:bg-white'
+                }
+              `}
             />
           </div>
         </div>
@@ -436,9 +514,15 @@ const Threats = () => {
           <p className="text-gray-400 mb-6">No threats match your search or filter criteria.</p>
         </div>
       ) : (
-        <div className="px-8 overflow-x-auto rounded-2xl shadow-2xl bg-white/10 border border-white/10">
+        <div className={`
+          px-8 overflow-x-auto rounded-2xl shadow-2xl border transition-all duration-300
+          ${isDarkMode ? 'bg-white/10 border-white/10' : 'bg-white/80 border-white/20'}
+        `}>
           <table className="min-w-full divide-y divide-white/10 table-fixed">
-            <thead className="bg-white/5">
+            <thead className={`
+              transition-colors duration-300
+              ${isDarkMode ? 'bg-white/5' : 'bg-white/40'}
+            `}>
               <tr>
                 <th className="px-2 py-3 text-left w-8">
                   <input
@@ -448,22 +532,39 @@ const Threats = () => {
                     className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
                   />
                 </th>
-                <th className="px-2 py-3 text-left text-xs font-bold text-gray-300 uppercase tracking-wider w-56">Threat Name</th>
-                <th className="px-2 py-3 text-left text-xs font-bold text-gray-300 uppercase tracking-wider w-28">Type</th>
-                <th className="px-2 py-3 text-left text-xs font-bold text-gray-300 uppercase tracking-wider w-28">Category</th>
-                <th className="px-2 py-3 text-left text-xs font-bold text-gray-300 uppercase tracking-wider w-20">Severity</th>
-                <th className="px-2 py-3 text-left text-xs font-bold text-gray-300 uppercase tracking-wider w-20">Confidence</th>
-                <th className="px-2 py-3 text-left text-xs font-bold text-gray-300 uppercase tracking-wider w-20">Status</th>
-                <th className="px-2 py-3 text-left text-xs font-bold text-gray-300 uppercase tracking-wider w-28">Actions</th>
+                <th className={`px-2 py-3 text-left text-xs font-bold uppercase tracking-wider w-56
+                  ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}
+                `}>THREAT NAME</th>
+                <th className={`px-2 py-3 text-left text-xs font-bold uppercase tracking-wider w-28
+                  ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}
+                `}>TYPE</th>
+                <th className={`px-2 py-3 text-left text-xs font-bold uppercase tracking-wider w-28
+                  ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}
+                `}>CATEGORY</th>
+                <th className={`px-2 py-3 text-left text-xs font-bold uppercase tracking-wider w-20
+                  ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}
+                `}>SEVERITY</th>
+                <th className={`px-2 py-3 text-left text-xs font-bold uppercase tracking-wider w-20
+                  ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}
+                `}>CONFIDENCE</th>
+                <th className={`px-2 py-3 text-left text-xs font-bold uppercase tracking-wider w-20
+                  ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}
+                `}>STATUS</th>
+                <th className={`px-2 py-3 text-left text-xs font-bold uppercase tracking-wider w-28
+                  ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}
+                `}>ACTIONS</th>
               </tr>
             </thead>
-            <tbody className="bg-white/5 divide-y divide-white/10 text-sm">
+            <tbody className={`
+              transition-colors duration-300
+              ${isDarkMode ? 'bg-white/5' : 'bg-white/10'} divide-y divide-white/10
+            `}>
               {currentThreats.map(threat => {
                 const typeInfo = getThreatTypeInfo(threat.threat_type);
                 const severityInfo = getSeverityInfo(threat.severity);
                 const statusInfo = getStatusInfo(threat.is_active);
                 return (
-                  <tr key={threat.threat_id || threat.ThreatID} className="hover:bg-purple-900/30 transition-all">
+                  <tr key={threat.threat_id || threat.ThreatID} className={`transition-all hover:${isDarkMode ? 'bg-purple-900/30' : 'bg-indigo-100/60'}`}>
                     <td className="px-2 py-2">
                       <input
                         type="checkbox"
@@ -474,15 +575,74 @@ const Threats = () => {
                     </td>
                     <td className="px-2 py-2 whitespace-normal break-all max-w-xs">{threat.threat_name}</td>
                     <td className="px-2 py-2 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${typeInfo.bg} ${typeInfo.color}`}>{typeInfo.label}</span>
+                      <span className={`inline-flex items-center px-4 py-1.5 rounded-full text-xs font-bold shadow-md transition-all duration-200 hover:scale-105
+                        ${isDarkMode
+                          ? typeInfo.bg + ' ' + typeInfo.color
+                          : (typeInfo.label === 'File Hash'
+                              ? 'bg-blue-100 text-blue-700'
+                              : typeInfo.label === 'IP Address'
+                              ? 'bg-red-100 text-red-700'
+                              : typeInfo.label === 'Domain'
+                              ? 'bg-purple-100 text-purple-700'
+                              : typeInfo.label === 'URL'
+                              ? 'bg-orange-100 text-orange-700'
+                              : typeInfo.label === 'Signature'
+                              ? 'bg-green-100 text-green-700'
+                              : typeInfo.label === 'YARA Rule'
+                              ? 'bg-yellow-100 text-yellow-700'
+                              : 'bg-gray-200 text-gray-700')
+                        }
+                      `}>
+                        <typeInfo.icon className={`w-4 h-4 mr-1 ${isDarkMode
+                          ? typeInfo.color
+                          : (typeInfo.label === 'File Hash'
+                              ? 'text-blue-500'
+                              : typeInfo.label === 'IP Address'
+                              ? 'text-red-500'
+                              : typeInfo.label === 'Domain'
+                              ? 'text-purple-500'
+                              : typeInfo.label === 'URL'
+                              ? 'text-orange-500'
+                              : typeInfo.label === 'Signature'
+                              ? 'text-green-500'
+                              : typeInfo.label === 'YARA Rule'
+                              ? 'text-yellow-500'
+                              : 'text-gray-400')
+                        }`} />
+                        {typeInfo.label}
+                      </span>
                     </td>
                     <td className="px-2 py-2 whitespace-normal break-all max-w-xs">{threat.threat_category}</td>
                     <td className="px-2 py-2 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${severityInfo.bg} ${severityInfo.text}`}>{severityInfo.label}</span>
+                      <span className={`inline-flex items-center px-4 py-1.5 rounded-full text-xs font-bold shadow-md transition-all duration-200 hover:scale-105
+                        ${isDarkMode
+                          ? severityInfo.bg + ' ' + severityInfo.text
+                          : (severityInfo.label === 'Critical'
+                              ? 'bg-red-100 text-red-700'
+                              : severityInfo.label === 'High'
+                              ? 'bg-orange-100 text-orange-700'
+                              : severityInfo.label === 'Medium'
+                              ? 'bg-yellow-100 text-yellow-700'
+                              : severityInfo.label === 'Low'
+                              ? 'bg-green-100 text-green-700'
+                              : 'bg-gray-200 text-gray-700')
+                        }
+                      `}>
+                        {severityInfo.label}
+                      </span>
                     </td>
                     <td className="px-2 py-2 whitespace-nowrap text-center">{(threat.confidence * 100).toFixed(0)}%</td>
                     <td className="px-2 py-2 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${statusInfo.bg} ${statusInfo.text}`}>{statusInfo.label}</span>
+                      <span className={`inline-flex items-center px-4 py-1.5 rounded-full text-xs font-bold shadow-md transition-all duration-200 hover:scale-105
+                        ${isDarkMode
+                          ? statusInfo.bg + ' ' + statusInfo.text
+                          : (statusInfo.label === 'Active'
+                              ? 'bg-green-100 text-green-700'
+                              : 'bg-gray-200 text-gray-700')
+                        }
+                      `}>
+                        {statusInfo.label}
+                      </span>
                     </td>
                     <td className="px-2 py-2 whitespace-nowrap">
                       <button
