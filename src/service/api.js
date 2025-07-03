@@ -56,9 +56,15 @@ export const fetchRealTimeStats = async () => {
   return response.data;
 };
 
+export const fetchEventsTimeline = async (params = {}) => {
+  const response = await api.get('/dashboard/events-timeline', { params });
+  return response.data;
+};
+
 // Agents APIs
+// Luôn lấy dữ liệu agent mới nhất từ database (không cache, không filter sai)
 export const fetchAgents = async () => {
-  const response = await api.get('/agents/list');
+  const response = await api.get('/agents/list', { params: { all: true } });
   return response.data;
 };
 
@@ -74,7 +80,7 @@ export const updateAgentStatus = async (agentId, statusData) => {
 
 // Events APIs
 export const fetchEvents = async (params = {}) => {
-  const response = await api.get('/events/list', { params });
+  const response = await api.get('/events/list', { params: { ...params, all: true } });
   return response.data;
 };
 
@@ -116,7 +122,7 @@ export const fetchAlertStats = async () => {
 
 // Detection Rules APIs
 export const fetchDetectionRules = async (params = {}) => {
-  const response = await api.get('/detection/rules', { params });
+  const response = await api.get('/detection/rules', { params: { ...params, all: true } });
   return response.data;
 };
 

@@ -36,6 +36,7 @@ const Sidebar = ({ currentPath = '/', user = { role: 'admin' } }) => {
   const [alertCount, setAlertCount] = useState(0);
   const [threatCount, setThreatCount] = useState(0);
   const [agentCount, setAgentCount] = useState({ online: 0, offline: 0 });
+  const [wsError, setWsError] = useState(false);
 
   // Fetch system stats and counts
   useEffect(() => {
@@ -57,16 +58,33 @@ const Sidebar = ({ currentPath = '/', user = { role: 'admin' } }) => {
         setAlertCount(alerts?.alerts?.length || 0);
         setThreatCount(threats?.threats?.length || 0);
         setAgentCount({
-          online: agents?.agents?.filter(a => a.status === 'online').length || 0,
-          offline: agents?.agents?.filter(a => a.status !== 'online').length || 0
+          online: agents?.agents?.filter(a => {
+            const s = (a.status || '').toLowerCase();
+            return s === 'online' || s === 'active';
+          }).length || 0,
+          offline: agents?.agents?.filter(a => {
+            const s = (a.status || '').toLowerCase();
+            return s === 'offline';
+          }).length || 0
         });
       } catch (err) {
         // fallback: do not update counts
       }
     };
     fetchSidebarData();
-    const interval = setInterval(fetchSidebarData, 30000);
-    return () => clearInterval(interval);
+    const interval = setInterval(fetchSidebarData, 10000);
+
+    // Tắt hoàn toàn WebSocket, chỉ dùng polling
+    setWsError(true); // Luôn báo lỗi WebSocket để hiển thị cảnh báo
+    // Polling 10s
+    const interval2 = setInterval(() => {
+      // Gọi API lấy dữ liệu agent (hoặc dữ liệu cần thiết)
+      // fetchAgents() hoặc API tương ứng
+    }, 10000);
+    return () => {
+      clearInterval(interval);
+      clearInterval(interval2);
+    };
   }, []);
 
   // Menu config
@@ -87,7 +105,7 @@ const Sidebar = ({ currentPath = '/', user = { role: 'admin' } }) => {
           icon: ComputerDesktopIcon,
           to: '/agents',
           badge: agentCount.online,
-          badgeColor: 'bg-green-600',
+          badgeColor: agentCount.online > 0 ? 'bg-green-600' : 'bg-gray-400',
           roles: ['admin', 'analyst'],
           description: 'Manage endpoint agents'
         },
@@ -142,30 +160,6 @@ const Sidebar = ({ currentPath = '/', user = { role: 'admin' } }) => {
           description: 'Network traffic analysis'
         },
         {
-          label: 'Users',
-          icon: UserGroupIcon,
-          to: '/users',
-          badge: null,
-          roles: ['admin'],
-          description: 'User management'
-        },
-        {
-          label: 'Backup',
-          icon: CloudIcon,
-          to: '/backup',
-          badge: null,
-          roles: ['admin'],
-          description: 'Backup & recovery'
-        },
-        {
-          label: 'Integrations',
-          icon: CpuChipIcon,
-          to: '/integrations',
-          badge: null,
-          roles: ['admin'],
-          description: 'Third-party integrations'
-        },
-        {
           label: 'Settings',
           icon: Cog6ToothIcon,
           to: '/settings',
@@ -173,7 +167,7 @@ const Sidebar = ({ currentPath = '/', user = { role: 'admin' } }) => {
           roles: ['admin', 'analyst', 'user'],
           description: 'System settings'
         }
-      ]
+      ].filter(item => !['Backup', 'Integrations', 'Users'].includes(item.label))
     }
   ];
 
@@ -201,23 +195,21 @@ const Sidebar = ({ currentPath = '/', user = { role: 'admin' } }) => {
   }, []);
 
   return (
-    <aside className={`h-screen bg-gradient-to-br from-slate-900 via-indigo-950 to-purple-950 text-white shadow-2xl border-r border-white/20 flex flex-col transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-72'} z-30`}>
+    <aside className={`h-screen bg-white dark:bg-gradient-to-br dark:from-slate-900 dark:via-indigo-950 dark:to-purple-950 text-gray-900 dark:text-white border-r border-gray-200 dark:border-white/20 shadow-lg flex flex-col transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-72'} z-30`}>
       {/* Header */}
-      <div className="p-6 border-b border-white/10 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl shadow-lg flex items-center justify-center">
-            <ShieldCheckIcon className="w-6 h-6 text-white" />
-          </div>
-          {!isCollapsed && (
-            <div>
-              <h1 className="font-bold text-white text-lg bg-gradient-to-r from-purple-400 to-indigo-400 bg-clip-text text-transparent">EDR System</h1>
-              <div className="text-xs text-gray-300 font-medium">{systemStats.license} • v{systemStats.version}</div>
-            </div>
-          )}
+      <div className="py-6 border-b border-gray-100 dark:border-white/10 flex flex-col items-center gap-2">
+        <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-2xl flex items-center justify-center shadow-lg">
+          <ShieldCheckIcon className="w-8 h-8 text-white" />
         </div>
+        {!isCollapsed && (
+          <>
+            <div className="text-xl font-extrabold bg-gradient-to-r from-purple-500 to-indigo-500 bg-clip-text text-transparent drop-shadow">EDR System</div>
+            <div className="text-xs text-gray-400 dark:text-gray-300 font-medium">{systemStats.license} • v{systemStats.version}</div>
+          </>
+        )}
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className="p-2 rounded-lg hover:bg-white/10 text-gray-300 hover:text-white transition-colors"
+          className="absolute top-6 right-4 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 text-gray-400 dark:text-gray-300 hover:text-purple-500 dark:hover:text-white transition-colors"
           title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
           {isCollapsed ? <ChevronRightIcon className="w-5 h-5" /> : <ChevronLeftIcon className="w-5 h-5" />}
@@ -232,31 +224,37 @@ const Sidebar = ({ currentPath = '/', user = { role: 'admin' } }) => {
         </div>
       )}
       {/* Menu */}
-      <nav className="flex-1 overflow-y-auto py-4">
+      <nav className="flex-1 px-2 py-4">
         {menuConfig.map(section => (
-          <div key={section.section} className="mb-4">
-            {!isCollapsed && <div className="px-6 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider">{section.section}</div>}
-            <ul className="space-y-1">
-              {section.items.filter(item => item.roles.includes(user.role)).map(item => (
-                <li key={item.label}>
-                  <button
-                    onClick={() => handleNavigation(item.to)}
-                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 group relative ${
-                      isActive(item.to)
-                        ? 'bg-purple-700/80 text-white shadow-lg'
-                        : 'text-gray-300 hover:bg-white/10 hover:text-white'
-                    }`}
-                    title={isCollapsed ? item.label : undefined}
+          <div key={section.section} className="mb-6">
+            <div className="text-xs font-bold uppercase text-gray-400 dark:text-gray-500 px-2 mb-2 tracking-wider">{section.section}</div>
+            {section.items.map(item => (
+              <button
+                key={item.label}
+                onClick={() => handleNavigation(item.to)}
+                className={`group flex items-center gap-3 w-full px-4 py-3 my-1 rounded-xl transition-colors duration-200 relative
+                  ${isActive(item.to)
+                    ? 'bg-purple-50 text-purple-700 font-bold shadow-sm border-l-4 border-purple-500 dark:bg-purple-700 dark:text-white dark:border-l-0'
+                    : 'hover:bg-gray-100 text-gray-700 dark:text-gray-200 dark:hover:bg-white/10'}
+                `}
+                title={item.description}
+              >
+                <item.icon className={`w-6 h-6 transition-colors duration-200
+                  ${isActive(item.to)
+                    ? 'text-purple-600 dark:text-white'
+                    : 'text-gray-400 group-hover:text-purple-500 dark:text-gray-400 dark:group-hover:text-white'}
+                `} />
+                {!isCollapsed && <span className="flex-1 text-left font-semibold">{item.label}</span>}
+                {!isCollapsed && item.badge != null && (
+                  <span
+                    className={`ml-auto px-2 py-0.5 rounded-full font-bold shadow-sm text-xs transition-colors duration-200
+                      ${item.badgeColor} text-white border border-gray-300 dark:border-gray-600`}
                   >
-                    <item.icon className="w-5 h-5" />
-                    {!isCollapsed && <span className="font-medium flex-1 text-left">{item.label}</span>}
-                    {item.badge !== null && item.badge !== undefined && item.badge > 0 && (
-                      <span className={`ml-auto text-xs font-bold px-2 py-0.5 rounded-full ${item.badgeColor || 'bg-purple-600'} text-white animate-pulse`}>{item.badge}</span>
-                    )}
-                  </button>
-                </li>
-              ))}
-            </ul>
+                    {item.badge}
+                  </span>
+                )}
+              </button>
+            ))}
           </div>
         ))}
       </nav>
@@ -265,10 +263,6 @@ const Sidebar = ({ currentPath = '/', user = { role: 'admin' } }) => {
         <div className="flex items-center gap-2">
           <LockClosedIcon className="w-4 h-4" />
           <span>Secured by EDR</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <ArrowLeftOnRectangleIcon className="w-4 h-4" />
-          <span>Logout</span>
         </div>
       </div>
     </aside>

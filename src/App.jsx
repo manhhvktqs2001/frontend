@@ -1,6 +1,5 @@
 import React from 'react';
 import { QueryClient, QueryClientProvider } from 'react-query';
-import { Toaster } from 'react-hot-toast';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import Sidebar from './components/Layout/Sidebar';
 import Header from './components/Layout/Header';
@@ -13,6 +12,7 @@ import Threats from './components/page/Threats';
 import Settings from './components/page/Settings';
 import ThreatHunt from './components/page/ThreatHunt';
 import NetworkMonitoring from './components/page/NetworkMonitoring';
+import ToastContainer from './components/common/ToastContainer';
 import './index.css';
 
 const queryClient = new QueryClient({
@@ -28,7 +28,7 @@ const App = () => {
   const location = useLocation();
   return (
     <QueryClientProvider client={queryClient}>
-      <div className="flex h-screen bg-gray-50">
+      <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
         <Sidebar currentPath={location.pathname} />
         <div className="flex-1 flex flex-col min-w-0">
           <Header />
@@ -46,31 +46,8 @@ const App = () => {
             </Routes>
           </main>
         </div>
-        {/* Toast Notifications */}
-        <Toaster
-          position="top-right"
-          toastOptions={{
-            duration: 4000,
-            style: {
-              background: '#363636',
-              color: '#fff',
-            },
-            success: {
-              duration: 3000,
-              theme: {
-                primary: '#4ade80',
-                secondary: '#fff',
-              },
-            },
-            error: {
-              duration: 5000,
-              theme: {
-                primary: '#ef4444',
-                secondary: '#fff',
-              },
-            },
-          }}
-        />
+        {/* Custom Toast Container */}
+        <ToastContainer />
       </div>
     </QueryClientProvider>
   );

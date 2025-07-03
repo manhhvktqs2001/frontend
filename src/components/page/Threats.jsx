@@ -39,11 +39,13 @@ const Threats = () => {
   const [selectedThreats, setSelectedThreats] = useState([]);
   const [showDetails, setShowDetails] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(new Date());
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(50);
 
   const fetchThreatsData = async () => {
     setLoading(true);
     try {
-      const data = await fetchThreats();
+      const data = await fetchThreats({ all: true });
       setThreats(data.threats || []);
       setLastUpdated(new Date());
       setError(null);
@@ -59,6 +61,8 @@ const Threats = () => {
     const interval = setInterval(fetchThreatsData, 30000);
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => { setCurrentPage(1); }, [search, filterType, filterSeverity, filterStatus]);
 
   const filtered = threats.filter(threat => {
     const matchesSearch = (threat.threat_name || '').toLowerCase().includes(search.toLowerCase()) ||
@@ -236,6 +240,46 @@ const Threats = () => {
     window.URL.revokeObjectURL(url);
   };
 
+  // Export selected threats to CSV
+  const exportSelectedThreats = () => {
+    if (selectedThreats.length === 0) return;
+    const selected = threats.filter(t => selectedThreats.includes(t.threat_id || t.ThreatID));
+    const csvContent = [
+      ['Threat Name', 'Type', 'Category', 'Severity', 'Confidence', 'Status'],
+      ...selected.map(t => [
+        t.threat_name,
+        t.threat_type,
+        t.threat_category,
+        t.severity,
+        (t.confidence * 100).toFixed(0) + '%',
+        (t.is_active === true || t.is_active === 1 || t.is_active === 'true') ? 'Active' : 'Inactive'
+      ])
+    ].map(row => row.join(',')).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `threats_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
+  // Delete selected threats (from state, with confirm)
+  const deleteSelectedThreats = () => {
+    if (selectedThreats.length === 0) return;
+    if (!window.confirm('Are you sure you want to delete the selected threats?')) return;
+    setThreats(prev => prev.filter(t => !selectedThreats.includes(t.threat_id || t.ThreatID)));
+    setSelectedThreats([]);
+  };
+
+  const totalPages = Math.ceil(filtered.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentThreats = filtered.slice(startIndex, endIndex);
+  const goToPage = (page) => setCurrentPage(Math.max(1, Math.min(page, totalPages)));
+  const goToNextPage = () => { if (currentPage < totalPages) setCurrentPage(currentPage + 1); };
+  const goToPrevPage = () => { if (currentPage > 1) setCurrentPage(currentPage - 1); };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-indigo-950 to-purple-950">
@@ -265,16 +309,8 @@ const Threats = () => {
       </div>
     );
   }
-  if (filtered.length === 0) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-indigo-950 to-purple-950">
-        <ShieldCheckIcon className="w-20 h-20 text-purple-900/30 mb-6" />
-        <h3 className="text-2xl font-semibold text-gray-100 mb-2">No Threats Found</h3>
-        <p className="text-gray-400 mb-6">No threats match your search or filter criteria.</p>
-      </div>
-    );
-  }
 
+  // Always show search/filter bar, even if no data
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-950 to-purple-950 text-white">
       {/* Header & Stats */}
@@ -382,178 +418,151 @@ const Threats = () => {
               className="pl-10 pr-4 py-2 bg-white/10 border border-white/10 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-white placeholder:text-gray-400"
             />
           </div>
-          <select
-            value={filterType}
-            onChange={e => setFilterType(e.target.value)}
-            className="px-4 py-2 bg-white/10 border border-white/10 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-white"
-          >
-            <option value="All">All Types</option>
-            <option value="Hash">File Hash</option>
-            <option value="IP">IP Address</option>
-            <option value="Domain">Domain</option>
-            <option value="URL">URL</option>
-            <option value="Signature">Signature</option>
-            <option value="YARA">YARA Rule</option>
-          </select>
-          <select
-            value={filterSeverity}
-            onChange={e => setFilterSeverity(e.target.value)}
-            className="px-4 py-2 bg-white/10 border border-white/10 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-white"
-          >
-            <option value="All">All Severity</option>
-            <option value="Critical">Critical</option>
-            <option value="High">High</option>
-            <option value="Medium">Medium</option>
-            <option value="Low">Low</option>
-          </select>
-          <select
-            value={filterStatus}
-            onChange={e => setFilterStatus(e.target.value)}
-            className="px-4 py-2 bg-white/10 border border-white/10 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-white"
-          >
-            <option value="All">All Status</option>
-            <option value="Active">Active</option>
-            <option value="Inactive">Inactive</option>
-          </select>
         </div>
         {selectedThreats.length > 0 && (
           <div className="flex gap-2 items-center bg-purple-900/60 px-4 py-2 rounded-lg shadow-lg">
             <span className="text-purple-200 font-medium">{selectedThreats.length} selected</span>
-            <button className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700">Export Selected</button>
-            <button className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700">Delete Selected</button>
+            <button className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700" onClick={exportSelectedThreats}>Export Selected</button>
+            <button className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700" onClick={deleteSelectedThreats}>Delete Selected</button>
           </div>
         )}
       </div>
 
       {/* Threats Table */}
-      <div className="px-8 overflow-x-auto rounded-2xl shadow-2xl bg-white/10 border border-white/10">
-        <table className="min-w-full divide-y divide-white/10">
-          <thead className="bg-white/5">
-            <tr>
-              <th className="px-6 py-3 text-left">
-                <input
-                  type="checkbox"
-                  checked={selectedThreats.length === filtered.length && filtered.length > 0}
-                  onChange={toggleSelectAll}
-                  className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                />
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-bold text-gray-300 uppercase tracking-wider">Threat</th>
-              <th className="px-6 py-3 text-left text-xs font-bold text-gray-300 uppercase tracking-wider">Type</th>
-              <th className="px-6 py-3 text-left text-xs font-bold text-gray-300 uppercase tracking-wider">Value</th>
-              <th className="px-6 py-3 text-left text-xs font-bold text-gray-300 uppercase tracking-wider">Severity</th>
-              <th className="px-6 py-3 text-left text-xs font-bold text-gray-300 uppercase tracking-wider">Status</th>
-              <th className="px-6 py-3 text-left text-xs font-bold text-gray-300 uppercase tracking-wider">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white/5 divide-y divide-white/10">
-            {filtered.map(threat => {
-              const typeInfo = getThreatTypeInfo(threat.threat_type);
-              const severityInfo = getSeverityInfo(threat.severity);
-              const statusInfo = getStatusInfo(threat.is_active);
-              
-              return (
-                <tr key={threat.threat_id || threat.ThreatID} className="hover:bg-purple-900/30 transition-all">
-                  <td className="px-6 py-4">
-                    <input
-                      type="checkbox"
-                      checked={selectedThreats.includes(threat.threat_id || threat.ThreatID)}
-                      onChange={() => toggleSelectThreat(threat.threat_id || threat.ThreatID)}
-                      className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                    />
-                  </td>
-                  <td className="px-6 py-4">
-                    <div>
-                      <div className="font-medium text-white">{threat.threat_name}</div>
-                      <div className="text-sm text-gray-300">{threat.description}</div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${typeInfo.bg} ${typeInfo.color}`}>
-                      <typeInfo.icon className="w-3 h-3 mr-1" />
-                      {typeInfo.label}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-gray-200 font-mono text-sm">{threat.threat_value}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${severityInfo.bg} ${severityInfo.text}`}>
-                      <severityInfo.icon className="w-3 h-3 mr-1" />
-                      {severityInfo.label}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${statusInfo.bg} ${statusInfo.text}`}>
-                      {statusInfo.label}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <button
-                      onClick={() => setShowDetails(threat)}
-                      className="text-purple-400 hover:text-purple-300 font-medium underline"
-                    >
-                      View Details
-                    </button>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+      {filtered.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-24">
+          <ShieldCheckIcon className="w-20 h-20 text-purple-900/30 mb-6" />
+          <h3 className="text-2xl font-semibold text-gray-100 mb-2">No Threats Found</h3>
+          <p className="text-gray-400 mb-6">No threats match your search or filter criteria.</p>
+        </div>
+      ) : (
+        <div className="px-8 overflow-x-auto rounded-2xl shadow-2xl bg-white/10 border border-white/10">
+          <table className="min-w-full divide-y divide-white/10 table-fixed">
+            <thead className="bg-white/5">
+              <tr>
+                <th className="px-2 py-3 text-left w-8">
+                  <input
+                    type="checkbox"
+                    checked={selectedThreats.length === filtered.length && filtered.length > 0}
+                    onChange={toggleSelectAll}
+                    className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                  />
+                </th>
+                <th className="px-2 py-3 text-left text-xs font-bold text-gray-300 uppercase tracking-wider w-56">Threat Name</th>
+                <th className="px-2 py-3 text-left text-xs font-bold text-gray-300 uppercase tracking-wider w-28">Type</th>
+                <th className="px-2 py-3 text-left text-xs font-bold text-gray-300 uppercase tracking-wider w-28">Category</th>
+                <th className="px-2 py-3 text-left text-xs font-bold text-gray-300 uppercase tracking-wider w-20">Severity</th>
+                <th className="px-2 py-3 text-left text-xs font-bold text-gray-300 uppercase tracking-wider w-20">Confidence</th>
+                <th className="px-2 py-3 text-left text-xs font-bold text-gray-300 uppercase tracking-wider w-20">Status</th>
+                <th className="px-2 py-3 text-left text-xs font-bold text-gray-300 uppercase tracking-wider w-28">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white/5 divide-y divide-white/10 text-sm">
+              {currentThreats.map(threat => {
+                const typeInfo = getThreatTypeInfo(threat.threat_type);
+                const severityInfo = getSeverityInfo(threat.severity);
+                const statusInfo = getStatusInfo(threat.is_active);
+                return (
+                  <tr key={threat.threat_id || threat.ThreatID} className="hover:bg-purple-900/30 transition-all">
+                    <td className="px-2 py-2">
+                      <input
+                        type="checkbox"
+                        checked={selectedThreats.includes(threat.threat_id || threat.ThreatID)}
+                        onChange={() => toggleSelectThreat(threat.threat_id || threat.ThreatID)}
+                        className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                      />
+                    </td>
+                    <td className="px-2 py-2 whitespace-normal break-all max-w-xs">{threat.threat_name}</td>
+                    <td className="px-2 py-2 whitespace-nowrap">
+                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${typeInfo.bg} ${typeInfo.color}`}>{typeInfo.label}</span>
+                    </td>
+                    <td className="px-2 py-2 whitespace-normal break-all max-w-xs">{threat.threat_category}</td>
+                    <td className="px-2 py-2 whitespace-nowrap">
+                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${severityInfo.bg} ${severityInfo.text}`}>{severityInfo.label}</span>
+                    </td>
+                    <td className="px-2 py-2 whitespace-nowrap text-center">{(threat.confidence * 100).toFixed(0)}%</td>
+                    <td className="px-2 py-2 whitespace-nowrap">
+                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${statusInfo.bg} ${statusInfo.text}`}>{statusInfo.label}</span>
+                    </td>
+                    <td className="px-2 py-2 whitespace-nowrap">
+                      <button
+                        onClick={() => setShowDetails(threat)}
+                        className="px-4 py-1 rounded-full bg-purple-700 text-white font-medium shadow hover:bg-purple-800 transition-all duration-150 border-2 border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-500 text-xs"
+                      >
+                        View Details
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="px-4 py-6 flex items-center justify-between bg-white/10 rounded-2xl shadow-xl border border-white/10 animate-fadeIn">
+          <div className="flex items-center gap-4">
+            <span className="text-gray-300 text-sm">
+              Showing {startIndex + 1} to {Math.min(endIndex, filtered.length)} of {filtered.length} threats
+            </span>
+            <span className="text-gray-400 text-sm">
+              Page {currentPage} of {totalPages}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button onClick={goToPrevPage} disabled={currentPage === 1} className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${currentPage === 1 ? 'bg-gray-700 text-gray-500 cursor-not-allowed' : 'bg-purple-600 text-white hover:bg-purple-700 hover:scale-105'}`}>Previous</button>
+            <div className="flex gap-1">
+              {currentPage > 3 && (<button onClick={() => goToPage(1)} className="px-3 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 transition-colors">1</button>)}
+              {currentPage > 4 && (<span className="px-3 py-2 text-gray-400">...</span>)}
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => { const page = currentPage - 2 + i; if (page > 0 && page <= totalPages) { return (<button key={page} onClick={() => goToPage(page)} className={`px-3 py-2 rounded-lg font-medium transition-all duration-200 ${page === currentPage ? 'bg-purple-800 text-white scale-110' : 'bg-purple-600 text-white hover:bg-purple-700 hover:scale-105'}`}>{page}</button>); } return null; })}
+              {currentPage < totalPages - 3 && (<span className="px-3 py-2 text-gray-400">...</span>)}
+              {currentPage < totalPages - 2 && (<button onClick={() => goToPage(totalPages)} className="px-3 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 transition-colors">{totalPages}</button>)}
+            </div>
+            <button onClick={goToNextPage} disabled={currentPage === totalPages} className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${currentPage === totalPages ? 'bg-gray-700 text-gray-500 cursor-not-allowed' : 'bg-purple-600 text-white hover:bg-purple-700 hover:scale-105'}`}>Next</button>
+          </div>
+        </div>
+      )}
 
       {/* Threat Details Modal */}
       {showDetails && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white/10 rounded-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto border border-white/10 shadow-2xl">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-white">Threat Details</h2>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-gradient-to-br from-slate-900 via-indigo-950 to-purple-950 border border-white/10 rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto relative animate-fadeIn">
+            <div className="flex items-center justify-between p-6 border-b border-white/10">
+              <div className="flex items-center gap-3">
+                <EyeIcon className="w-8 h-8 text-purple-400" />
+                <h2 className="text-2xl font-bold text-white">Threat Details</h2>
+              </div>
               <button
                 onClick={() => setShowDetails(null)}
-                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                className="p-2 rounded-lg hover:bg-purple-900/40 transition-colors group"
+                aria-label="Close details"
               >
-                <XCircleIcon className="w-6 h-6 text-gray-300" />
+                <XCircleIcon className="w-7 h-7 text-gray-300 group-hover:text-red-400 transition-colors" />
               </button>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <h3 className="text-lg font-semibold text-white mb-4">Threat Information</h3>
-                <div className="space-y-3">
-                  <div>
-                    <label className="text-sm font-medium text-gray-300">Threat Name</label>
-                    <p className="text-white">{showDetails.threat_name}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-300">Threat Type</label>
-                    <p className="text-white">{showDetails.threat_type}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-300">Threat Value</label>
-                    <p className="text-white font-mono text-sm">{showDetails.threat_value}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-300">Severity</label>
-                    <p className={`font-semibold ${severityMap[(showDetails.severity || '').toLowerCase()]}`}>
-                      {showDetails.severity}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-300">Status</label>
-                    <p className={`font-semibold ${(showDetails.is_active === true || showDetails.is_active === 1 || showDetails.is_active === 'true') ? 'text-green-400' : 'text-gray-400'}`}>
-                      {(showDetails.is_active === true || showDetails.is_active === 1 || showDetails.is_active === 'true') ? 'Active' : 'Inactive'}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-300">Description</label>
-                    <p className="text-white">{showDetails.description}</p>
-                  </div>
-                </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6">
+              <div className="space-y-4">
+                <div><span className="block text-xs text-gray-400 font-semibold uppercase mb-1">Name</span><span className="text-lg font-bold text-purple-300">{showDetails.threat_name}</span></div>
+                <div><span className="block text-xs text-gray-400 font-semibold uppercase mb-1">Type</span><span className="text-base text-white">{showDetails.threat_type}</span></div>
+                <div><span className="block text-xs text-gray-400 font-semibold uppercase mb-1">Value</span><span className="text-base text-white font-mono">{showDetails.threat_value}</span></div>
+                <div><span className="block text-xs text-gray-400 font-semibold uppercase mb-1">Severity</span><span className={`inline-block px-3 py-1 rounded-full text-xs font-bold bg-${(showDetails.severity || '').toLowerCase() === 'critical' ? 'red' : (showDetails.severity || '').toLowerCase() === 'high' ? 'orange' : (showDetails.severity || '').toLowerCase() === 'medium' ? 'yellow' : (showDetails.severity || '').toLowerCase() === 'low' ? 'green' : 'blue'}-900/60 text-${(showDetails.severity || '').toLowerCase() === 'critical' ? 'red' : (showDetails.severity || '').toLowerCase() === 'high' ? 'orange' : (showDetails.severity || '').toLowerCase() === 'medium' ? 'yellow' : (showDetails.severity || '').toLowerCase() === 'low' ? 'green' : 'blue'}-200`}>{showDetails.severity}</span></div>
+                <div><span className="block text-xs text-gray-400 font-semibold uppercase mb-1">Status</span><span className="text-base text-white">{(showDetails.is_active === true || showDetails.is_active === 1 || showDetails.is_active === 'true') ? 'Active' : 'Inactive'}</span></div>
+                <div><span className="block text-xs text-gray-400 font-semibold uppercase mb-1">Description</span><span className="text-base text-white">{showDetails.description}</span></div>
               </div>
-              <div>
-                <h3 className="text-lg font-semibold text-white mb-4">Threat Details</h3>
-                <div className="bg-gray-800/60 rounded-lg p-4">
-                  <pre className="text-sm text-gray-200 whitespace-pre-wrap">
-                    {JSON.stringify(showDetails, null, 2)}
-                  </pre>
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-semibold text-gray-300">Raw Threat Data</span>
+                  <button
+                    className="px-2 py-1 text-xs bg-purple-700 text-white rounded hover:bg-purple-800 transition-colors"
+                    onClick={() => {
+                      navigator.clipboard.writeText(JSON.stringify(showDetails, null, 2));
+                    }}
+                  >Copy JSON</button>
+                </div>
+                <div className="bg-black/60 rounded-lg p-3 overflow-x-auto max-h-60 border border-white/10">
+                  <pre className="text-xs text-purple-100 font-mono whitespace-pre-wrap">{JSON.stringify(showDetails, null, 2)}</pre>
                 </div>
               </div>
             </div>

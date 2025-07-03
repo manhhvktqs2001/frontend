@@ -23,13 +23,13 @@ import {
   FireIcon,
   WifiIcon
 } from '@heroicons/react/24/outline';
-import { Doughnut, Line, Bar } from 'react-chartjs-2';
+import { Doughnut, Line, Bar, Pie } from 'react-chartjs-2';
 import { Chart, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement, BarElement } from 'chart.js';
 import { 
   fetchDashboardStats, 
   fetchAlerts, 
   fetchThreats, 
-  fetchEvents 
+  fetchEventsTimeline 
 } from '../../service/api';
 import { useNavigate } from 'react-router-dom';
 
@@ -52,7 +52,7 @@ const Dashboard = () => {
     try {
       const [statsData, eventsData, alertsData, threatsData] = await Promise.all([
         fetchDashboardStats(),
-        fetchEvents(),
+        fetchEventsTimeline(),
         fetchAlerts(),
         fetchThreats()
       ]);
@@ -159,6 +159,24 @@ const Dashboard = () => {
       ],
       borderRadius: 8,
       borderSkipped: false,
+    }]
+  } : null;
+
+  // Event Type Breakdown
+  const eventTypeCounts = timeline?.events_by_type;
+  const eventTypeChartData = eventTypeCounts ? {
+    labels: Object.keys(eventTypeCounts),
+    datasets: [{
+      data: Object.values(eventTypeCounts),
+      backgroundColor: [
+        '#3b82f6', // Process
+        '#10b981', // File
+        '#f59e0b', // Network
+        '#a21caf', // Registry
+        '#f43f5e', // Authentication
+        '#6366f1', // System
+      ],
+      borderWidth: 0,
     }]
   } : null;
 
@@ -381,29 +399,50 @@ const Dashboard = () => {
               )}
             </div>
           </div>
+
+          {/* Events by Type Breakdown */}
+          <div className="bg-white/10 rounded-2xl shadow-xl p-6 border border-white/10">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-white">Events by Type</h3>
+              <ChartBarIcon className="w-6 h-6 text-blue-400" />
+            </div>
+            <div className="relative h-72">
+              {eventTypeChartData ? (
+                <Doughnut data={eventTypeChartData} options={chartOptions} />
+              ) : (
+                <div className="flex items-center justify-center h-full text-gray-400">
+                  <ChartBarIcon className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                  <p>No event type data available</p>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Recent Activity Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
           {/* Recent Critical Alerts */}
-          <div className="bg-white/10 rounded-2xl shadow-xl p-6 border border-white/10">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-white">Recent Critical Alerts</h3>
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                <span className="text-xs font-medium text-red-300">Live</span>
+          {alertsOverview?.recent_critical_alerts?.length > 0 && (
+            <div className="bg-gradient-to-br from-red-700/80 to-pink-900/80 rounded-2xl shadow-2xl p-6 border border-red-700/30">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-white tracking-tight flex items-center gap-2">
+                  <ExclamationTriangleIcon className="w-7 h-7 text-red-300" />
+                  Recent Critical Alerts
+                </h3>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                  <span className="text-xs font-medium text-red-200">Live</span>
+                </div>
               </div>
-            </div>
-            <div className="space-y-3 max-h-72 overflow-y-auto">
-              {alertsOverview?.recent_critical_alerts?.length ? 
-                alertsOverview.recent_critical_alerts.slice(0, 5).map((alert, index) => (
+              <div className="space-y-3 max-h-72 overflow-y-auto">
+                {alertsOverview.recent_critical_alerts.slice(0, 5).map((alert, index) => (
                   <div key={alert.alert_id || index} className="p-4 bg-gradient-to-r from-red-900/60 to-pink-900/40 rounded-xl border border-red-900/30 hover:shadow-md transition-all duration-200">
                     <div className="flex items-start gap-3">
                       <div className="p-2 bg-red-600 rounded-lg">
-                        <ExclamationTriangleIcon className="w-4 h-4 text-white" />
+                        <ExclamationTriangleIcon className="w-5 h-5 text-white" />
                       </div>
                       <div className="flex-1">
-                        <h4 className="font-semibold text-white text-sm">{alert.title}</h4>
+                        <h4 className="font-semibold text-white text-base">{alert.title}</h4>
                         <p className="text-xs text-gray-300 mt-1">Agent: {alert.agent_id}</p>
                         <div className="flex items-center gap-2 mt-2">
                           <span className="px-2 py-1 bg-red-800/60 text-red-200 rounded-full text-xs font-medium">
@@ -416,27 +455,23 @@ const Dashboard = () => {
                       </div>
                     </div>
                   </div>
-                )) : 
-                <div className="text-center py-8 text-gray-400">
-                  <CheckCircleIcon className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                  <p>No critical alerts at this time</p>
-                </div>
-              }
-            </div>
-          </div>
-
-          {/* Recent Threat Detections */}
-          <div className="bg-white/10 rounded-2xl shadow-xl p-6 border border-white/10">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-white">Recent Threat Detections</h3>
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
-                <span className="text-xs font-medium text-orange-200">Active</span>
+                ))}
               </div>
             </div>
-            <div className="space-y-3 max-h-72 overflow-y-auto">
-              {threatsOverview?.recent_detections?.length ? 
-                threatsOverview.recent_detections.slice(0, 5).map((threat, index) => (
+          )}
+
+          {/* Recent Threat Detections */}
+          {threatsOverview?.recent_detections?.length > 0 && (
+            <div className="bg-white/10 rounded-2xl shadow-xl p-6 border border-white/10">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-white">Recent Threat Detections</h3>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
+                  <span className="text-xs font-medium text-orange-200">Active</span>
+                </div>
+              </div>
+              <div className="space-y-3 max-h-72 overflow-y-auto">
+                {threatsOverview.recent_detections.slice(0, 5).map((threat, index) => (
                   <div key={threat.threat_id || index} className="p-4 bg-gradient-to-r from-orange-900/60 to-yellow-900/40 rounded-xl border border-orange-900/30 hover:shadow-md transition-all duration-200">
                     <div className="flex items-start gap-3">
                       <div className="p-2 bg-orange-600 rounded-lg">
@@ -453,14 +488,10 @@ const Dashboard = () => {
                       </div>
                     </div>
                   </div>
-                )) : 
-                <div className="text-center py-8 text-gray-400">
-                  <ShieldCheckIcon className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                  <p>No recent threat detections</p>
-                </div>
-              }
+                ))}
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* System Status Footer */}

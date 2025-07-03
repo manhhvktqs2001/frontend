@@ -105,10 +105,10 @@ const Agents = () => {
         agent.operating_system || agent.OperatingSystem,
         agent.status,
         agent.last_heartbeat || agent.LastHeartbeat,
-        `${agent.cpu_usage || agent.CPUUsage}%`,
-        `${agent.memory_usage || agent.MemoryUsage}%`,
-        `${agent.disk_usage || agent.DiskUsage}%`,
-        `${agent.network_latency || agent.NetworkLatency} ms`
+        `${(agent.cpu_usage ?? agent.CPUUsage) || 0}%`,
+        `${(agent.memory_usage ?? agent.MemoryUsage) || 0}%`,
+        `${(agent.disk_usage ?? agent.DiskUsage) || 0}%`,
+        `${(agent.network_latency ?? agent.NetworkLatency) || 0} ms`
       ])
     ].map(row => row.join(',')).join('\n');
 
@@ -150,16 +150,8 @@ const Agents = () => {
       </div>
     );
   }
-  if (filtered.length === 0) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-blue-950 to-indigo-950">
-        <UserGroupIcon className="w-20 h-20 text-blue-900/30 mb-6" />
-        <h3 className="text-2xl font-semibold text-gray-100 mb-2">No Agents Found</h3>
-        <p className="text-gray-400 mb-6">No endpoint agents match your search or filter criteria.</p>
-      </div>
-    );
-  }
 
+  // Always show search/filter bar, even if no data
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-indigo-950 text-white">
       {/* Header & Stats */}
@@ -266,103 +258,111 @@ const Agents = () => {
         )}
       </div>
 
-      {/* Agents Table */}
-      <div className="px-8 overflow-x-auto rounded-2xl shadow-2xl bg-white/10 border border-white/10">
-        <table className="min-w-full divide-y divide-white/10">
-          <thead className="bg-white/5">
-            <tr>
-              <th className="px-6 py-3 text-left">
-                <input
-                  type="checkbox"
-                  checked={selectedAgents.length === filtered.length && filtered.length > 0}
-                  onChange={toggleSelectAll}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-bold text-gray-300 uppercase tracking-wider">Hostname</th>
-              <th className="px-6 py-3 text-left text-xs font-bold text-gray-300 uppercase tracking-wider">IP Address</th>
-              <th className="px-6 py-3 text-left text-xs font-bold text-gray-300 uppercase tracking-wider">OS</th>
-              <th className="px-6 py-3 text-left text-xs font-bold text-gray-300 uppercase tracking-wider">Status</th>
-              <th className="px-6 py-3 text-left text-xs font-bold text-gray-300 uppercase tracking-wider">Last Heartbeat</th>
-              <th className="px-6 py-3 text-left text-xs font-bold text-gray-300 uppercase tracking-wider">Performance</th>
-              <th className="px-6 py-3 text-left text-xs font-bold text-gray-300 uppercase tracking-wider">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white/5 divide-y divide-white/10">
-            {filtered.map(agent => {
-              const status = statusMap[(agent.status || '').toLowerCase()] || statusMap['offline'];
-              const StatusIcon = status.icon;
-              return (
-                <tr key={agent.agent_id || agent.AgentID} className="hover:bg-blue-900/30 transition-all">
-                  <td className="px-6 py-4">
-                    <input
-                      type="checkbox"
-                      checked={selectedAgents.includes(agent.agent_id || agent.AgentID)}
-                      onChange={() => toggleSelectAgent(agent.agent_id || agent.AgentID)}
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    />
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap font-medium text-white">{agent.hostname || agent.HostName}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-gray-200">{agent.ip_address || agent.IPAddress}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-gray-200">{agent.operating_system || agent.OperatingSystem}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className={`flex items-center gap-2 ${status.bg} px-2 py-1 rounded-lg w-fit`}>
-                      <StatusIcon className={`w-5 h-5 ${status.color}`} />
-                      <span className={`font-semibold ${status.color}`}>{status.label}</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-gray-200">{agent.last_heartbeat || agent.LastHeartbeat}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center gap-4 text-sm">
-                      <div className="flex items-center gap-1">
-                        <CpuChipIcon className="w-4 h-4 text-blue-400" />
-                        <span className="text-gray-200">{agent.cpu_usage || agent.CPUUsage}%</span>
+      {/* If no agents found, show message but keep search/filter visible */}
+      {filtered.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-24">
+          <UserGroupIcon className="w-20 h-20 text-blue-900/30 mb-6" />
+          <h3 className="text-2xl font-semibold text-gray-100 mb-2">No Agents Found</h3>
+          <p className="text-gray-400 mb-6">No endpoint agents match your search or filter criteria.</p>
+        </div>
+      ) : (
+        <div className="px-8 overflow-x-auto rounded-2xl shadow-2xl bg-white/10 border border-white/10">
+          <table className="min-w-full divide-y divide-white/10">
+            <thead className="bg-white/5">
+              <tr>
+                <th className="px-2 py-3 text-left">
+                  <input
+                    type="checkbox"
+                    checked={selectedAgents.length === filtered.length && filtered.length > 0}
+                    onChange={toggleSelectAll}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                </th>
+                <th className="px-2 py-3 text-left text-xs font-bold text-gray-300 uppercase tracking-wider w-32">Hostname</th>
+                <th className="px-2 py-3 text-left text-xs font-bold text-gray-300 uppercase tracking-wider w-24">IP Address</th>
+                <th className="px-2 py-3 text-left text-xs font-bold text-gray-300 uppercase tracking-wider w-32">OS</th>
+                <th className="px-2 py-3 text-left text-xs font-bold text-gray-300 uppercase tracking-wider w-24">Status</th>
+                <th className="px-2 py-3 text-left text-xs font-bold text-gray-300 uppercase tracking-wider w-40">Last Heartbeat</th>
+                <th className="px-2 py-3 text-left text-xs font-bold text-gray-300 uppercase tracking-wider min-w-40">Performance</th>
+                <th className="px-2 py-3 text-left text-xs font-bold text-gray-300 uppercase tracking-wider min-w-32">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white/5 divide-y divide-white/10">
+              {filtered.map(agent => {
+                const status = statusMap[(agent.status || '').toLowerCase()] || statusMap['offline'];
+                const StatusIcon = status.icon;
+                return (
+                  <tr key={agent.agent_id || agent.AgentID} className="hover:bg-blue-900/30 transition-all">
+                    <td className="px-2 py-4">
+                      <input
+                        type="checkbox"
+                        checked={selectedAgents.includes(agent.agent_id || agent.AgentID)}
+                        onChange={() => toggleSelectAgent(agent.agent_id || agent.AgentID)}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                    </td>
+                    <td className="px-2 py-4 whitespace-nowrap w-32 font-medium text-white">{agent.hostname || agent.HostName}</td>
+                    <td className="px-2 py-4 whitespace-nowrap w-24 text-gray-200">{agent.ip_address || agent.IPAddress}</td>
+                    <td className="px-2 py-4 whitespace-nowrap w-32 text-gray-200">{agent.operating_system || agent.OperatingSystem}</td>
+                    <td className="px-2 py-4 whitespace-nowrap w-24">
+                      <div className={`flex items-center gap-2 ${status.bg} px-2 py-1 rounded-lg w-fit`}>
+                        <StatusIcon className={`w-5 h-5 ${status.color}`} />
+                        <span className={`font-semibold ${status.color}`}>{status.label}</span>
                       </div>
-                      <div className="flex items-center gap-1">
-                        <ServerIcon className="w-4 h-4 text-green-400" />
-                        <span className="text-gray-200">{agent.memory_usage || agent.MemoryUsage}%</span>
+                    </td>
+                    <td className="px-2 py-4 whitespace-nowrap w-40 text-gray-200">{agent.last_heartbeat || agent.LastHeartbeat}</td>
+                    <td className="px-2 py-4 whitespace-nowrap min-w-40">
+                      <div className="flex flex-row items-center gap-2 text-xs">
+                        <div className="flex flex-row items-center" title="CPU Usage">
+                          <CpuChipIcon className="w-4 h-4 text-blue-400" />
+                          <span className="text-gray-200 font-medium ml-1">{(agent.cpu_usage ?? agent.CPUUsage ?? 0) !== '' ? `${agent.cpu_usage ?? agent.CPUUsage ?? 0}%` : '--'}</span>
+                        </div>
+                        <div className="flex flex-row items-center" title="Memory Usage">
+                          <ServerIcon className="w-4 h-4 text-green-400" />
+                          <span className="text-gray-200 font-medium ml-1">{(agent.memory_usage ?? agent.MemoryUsage ?? 0) !== '' ? `${agent.memory_usage ?? agent.MemoryUsage ?? 0}%` : '--'}</span>
+                        </div>
+                        <div className="flex flex-row items-center" title="Disk Usage">
+                          <ServerIcon className="w-4 h-4 text-purple-400" />
+                          <span className="text-gray-200 font-medium ml-1">{(agent.disk_usage ?? agent.DiskUsage ?? 0) !== '' ? `${agent.disk_usage ?? agent.DiskUsage ?? 0}%` : '--'}</span>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-1">
-                        <ServerIcon className="w-4 h-4 text-purple-400" />
-                        <span className="text-gray-200">{agent.disk_usage || agent.DiskUsage}%</span>
+                    </td>
+                    <td className="px-2 py-4 whitespace-nowrap min-w-32">
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => setShowDetails(agent)}
+                          className="p-1 text-blue-400 hover:bg-blue-900/40 rounded transition-colors"
+                          title="View Details"
+                        >
+                          <EyeIcon className="w-4 h-4" />
+                        </button>
+                        <button
+                          className="p-1 text-green-400 hover:bg-green-900/40 rounded transition-colors"
+                          title="Enable Agent"
+                        >
+                          <PlayIcon className="w-4 h-4" />
+                        </button>
+                        <button
+                          className="p-1 text-orange-400 hover:bg-orange-900/40 rounded transition-colors"
+                          title="Configure Agent"
+                        >
+                          <Cog6ToothIcon className="w-4 h-4" />
+                        </button>
+                        <button
+                          className="p-1 text-red-400 hover:bg-red-900/40 rounded transition-colors"
+                          title="Remove Agent"
+                        >
+                          <TrashIcon className="w-4 h-4" />
+                        </button>
                       </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => setShowDetails(agent)}
-                        className="p-2 text-blue-400 hover:bg-blue-900/40 rounded-lg transition-colors"
-                        title="View Details"
-                      >
-                        <EyeIcon className="w-4 h-4" />
-                      </button>
-                      <button
-                        className="p-2 text-green-400 hover:bg-green-900/40 rounded-lg transition-colors"
-                        title="Enable Agent"
-                      >
-                        <PlayIcon className="w-4 h-4" />
-                      </button>
-                      <button
-                        className="p-2 text-orange-400 hover:bg-orange-900/40 rounded-lg transition-colors"
-                        title="Configure Agent"
-                      >
-                        <Cog6ToothIcon className="w-4 h-4" />
-                      </button>
-                      <button
-                        className="p-2 text-red-400 hover:bg-red-900/40 rounded-lg transition-colors"
-                        title="Remove Agent"
-                      >
-                        <TrashIcon className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {/* Agent Details Modal */}
       {showDetails && (

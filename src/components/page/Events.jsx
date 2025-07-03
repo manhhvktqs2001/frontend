@@ -39,8 +39,6 @@ const EVENT_TYPES = [
   { label: 'System', value: 'System' },
 ];
 
-const PAGE_SIZE = 20;
-
 const Events = () => {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -51,12 +49,15 @@ const Events = () => {
   const [showDetails, setShowDetails] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(new Date());
   const [activeType, setActiveType] = useState('All');
+  
+  // Phân trang
   const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(50); // Hiển thị 50 logs mỗi trang
 
   const fetchEventsData = async () => {
     setLoading(true);
     try {
-      const data = await fetchEvents();
+      const data = await fetchEvents({ hours: 0 }); // Lấy toàn bộ logs, không giới hạn thời gian
       setEvents(data.events || []);
       setLastUpdated(new Date());
       setError(null);
@@ -75,6 +76,11 @@ const Events = () => {
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    setActiveType('All'); // Reset type khi đổi filter/search/severity
+    setCurrentPage(1); // Reset về trang đầu khi thay đổi filter
+  }, [search, filterSeverity]);
+
   const filtered = events.filter(event => {
     const matchesSearch = (event.event_type || '').toLowerCase().includes(search.toLowerCase()) ||
       (event.event_action || '').toLowerCase().includes(search.toLowerCase());
@@ -82,6 +88,29 @@ const Events = () => {
     const matchesSeverity = filterSeverity === 'All' || (event.severity || '').toLowerCase() === filterSeverity.toLowerCase();
     return matchesSearch && matchesType && matchesSeverity;
   });
+
+  // Tính toán phân trang
+  const totalPages = Math.ceil(filtered.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentEvents = filtered.slice(startIndex, endIndex);
+
+  // Hàm chuyển trang
+  const goToPage = (page) => {
+    setCurrentPage(Math.max(1, Math.min(page, totalPages)));
+  };
+
+  const goToNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
+  const goToPrevPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
 
   const stats = {
     total: events.length,
@@ -131,14 +160,6 @@ const Events = () => {
     window.URL.revokeObjectURL(url);
   };
 
-  // Pagination
-  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
-  const paginated = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
-
-  useEffect(() => {
-    setCurrentPage(1); // Reset page khi đổi loại event
-  }, [activeType, search, filterSeverity]);
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-indigo-950 to-purple-950">
@@ -153,6 +174,7 @@ const Events = () => {
       </div>
     );
   }
+
   if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-red-900 to-pink-900">
@@ -165,15 +187,6 @@ const Events = () => {
             className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200 font-medium"
           >Try Again</button>
         </div>
-      </div>
-    );
-  }
-  if (filtered.length === 0) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-indigo-950 to-purple-950">
-        <ChartBarIcon className="w-20 h-20 text-purple-900/30 mb-6" />
-        <h3 className="text-2xl font-semibold text-gray-100 mb-2">No Events Found</h3>
-        <p className="text-gray-400 mb-6">No events match your search or filter criteria.</p>
       </div>
     );
   }
@@ -281,7 +294,7 @@ const Events = () => {
       {/* Filters & Bulk Actions */}
       <div className="px-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6 animate-fadeIn">
         <div className="flex gap-2 w-full md:w-auto">
-          <div className="relative w-full md:w-64">
+          <div className="relative w-full md:w-96">
             <MagnifyingGlassIcon className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
               type="text"
@@ -291,18 +304,6 @@ const Events = () => {
               className="pl-10 pr-4 py-2 w-full bg-white/10 border border-white/10 rounded-full focus:ring-2 focus:ring-purple-500 focus:border-transparent text-white placeholder:text-gray-400 shadow-md"
             />
           </div>
-          <select
-            value={filterSeverity}
-            onChange={e => setFilterSeverity(e.target.value)}
-            className="px-4 py-2 bg-white/10 border border-white/10 rounded-full focus:ring-2 focus:ring-purple-500 focus:border-transparent text-white shadow-md"
-          >
-            <option value="All">All Severity</option>
-            <option value="Critical">Critical</option>
-            <option value="High">High</option>
-            <option value="Medium">Medium</option>
-            <option value="Low">Low</option>
-            <option value="Info">Info</option>
-          </select>
         </div>
         {selectedEvents.length > 0 && (
           <div className="flex gap-2 items-center bg-purple-900/60 px-4 py-2 rounded-lg shadow-lg animate-fadeIn">
@@ -311,75 +312,168 @@ const Events = () => {
             <button className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700">Delete Selected</button>
           </div>
         )}
+        <div className="flex items-center gap-2 text-sm text-gray-300">
+          <span>Total: {filtered.length} events</span>
+          <span>•</span>
+          <span>Page {currentPage} of {totalPages}</span>
+        </div>
       </div>
 
       {/* Events Table */}
-      <div className="px-4 overflow-x-auto rounded-2xl shadow-2xl bg-white/10 border border-white/10 animate-fadeInUp">
-        <table className="min-w-full divide-y divide-white/10 rounded-2xl overflow-hidden">
-          <thead className="bg-white/10">
-            <tr>
-              <th className="px-4 py-3 text-left align-middle w-8">
-                <input
-                  type="checkbox"
-                  checked={selectedEvents.length === filtered.length && filtered.length > 0}
-                  onChange={toggleSelectAll}
-                  className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                />
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-bold text-gray-300 uppercase tracking-wider min-w-[110px] align-middle">Type</th>
-              <th className="px-4 py-3 text-left text-xs font-bold text-gray-300 uppercase tracking-wider min-w-[120px] align-middle">Action</th>
-              <th className="px-4 py-3 text-left text-xs font-bold text-gray-300 uppercase tracking-wider min-w-[260px] align-middle">Agent</th>
-              <th className="px-4 py-3 text-left text-xs font-bold text-gray-300 uppercase tracking-wider min-w-[180px] align-middle">Time</th>
-              <th className="px-4 py-3 text-center text-xs font-bold text-gray-300 uppercase tracking-wider min-w-[90px] align-middle">Severity</th>
-              <th className="px-4 py-3 text-center text-xs font-bold text-gray-300 uppercase tracking-wider min-w-[100px] align-middle">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white/5 divide-y divide-white/10">
-            {paginated.map(event => (
-              <tr key={event.event_id || event.EventID} className="hover:bg-purple-900/30 transition-all duration-150">
-                <td className="px-4 py-4 align-middle">
+      {filtered.length === 0 ? (
+        <div className="px-4 py-12 text-center text-lg text-gray-400 font-semibold animate-fadeIn">
+          <ChartBarIcon className="w-12 h-12 mx-auto mb-2 opacity-30" />
+          No events found.
+        </div>
+      ) : (
+        <div className="px-4 overflow-x-auto rounded-2xl shadow-2xl bg-white/10 border border-white/10 animate-fadeInUp">
+          <table className="min-w-full divide-y divide-white/10 rounded-2xl overflow-hidden">
+            <thead className="bg-white/10">
+              <tr>
+                <th className="px-4 py-3 text-left align-middle w-8">
                   <input
                     type="checkbox"
-                    checked={selectedEvents.includes(event.event_id || event.EventID)}
-                    onChange={() => toggleSelectEvent(event.event_id || event.EventID)}
+                    checked={selectedEvents.length === filtered.length && filtered.length > 0}
+                    onChange={toggleSelectAll}
                     className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
                   />
-                </td>
-                <td className="px-4 py-4 whitespace-nowrap font-medium text-white align-middle">{event.event_type}</td>
-                <td className="px-4 py-4 whitespace-nowrap text-gray-200 align-middle">{event.event_action}</td>
-                <td className="px-4 py-4 whitespace-nowrap text-gray-200 align-middle font-mono text-xs">{event.agent_id}</td>
-                <td className="px-4 py-4 whitespace-nowrap text-gray-200 align-middle font-mono text-xs">{event.event_timestamp}</td>
-                <td className="px-4 py-4 align-middle text-center">
-                  <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold shadow-md bg-gradient-to-r ${event.severity?.toLowerCase() === 'critical' ? 'from-red-600 to-red-900' : event.severity?.toLowerCase() === 'high' ? 'from-orange-500 to-orange-900' : event.severity?.toLowerCase() === 'medium' ? 'from-yellow-500 to-yellow-900' : event.severity?.toLowerCase() === 'low' ? 'from-green-500 to-green-900' : 'from-blue-500 to-blue-900'} text-white`}>{event.severity}</span>
-                </td>
-                <td className="px-4 py-4 align-middle text-center">
-                  <button
-                    onClick={() => setShowDetails(event)}
-                    className="px-3 py-1 rounded-full bg-purple-700 text-white font-medium shadow hover:bg-purple-800 transition-all duration-150"
-                  >
-                    View Details
-                  </button>
-                </td>
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-bold text-gray-300 uppercase tracking-wider min-w-[110px] align-middle">Type</th>
+                <th className="px-4 py-3 text-left text-xs font-bold text-gray-300 uppercase tracking-wider min-w-[120px] align-middle">Action</th>
+                <th className="px-4 py-3 text-left text-xs font-bold text-gray-300 uppercase tracking-wider min-w-[260px] align-middle">Agent</th>
+                <th className="px-4 py-3 text-left text-xs font-bold text-gray-300 uppercase tracking-wider min-w-[180px] align-middle">Time</th>
+                <th className="px-4 py-3 text-center text-xs font-bold text-gray-300 uppercase tracking-wider min-w-[90px] align-middle">Severity</th>
+                <th className="px-4 py-3 text-center text-xs font-bold text-gray-300 uppercase tracking-wider min-w-[100px] align-middle">Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody className="bg-white/5 divide-y divide-white/10">
+              {currentEvents.map(event => (
+                <tr key={event.event_id || event.EventID} className="hover:bg-purple-900/30 transition-all duration-150">
+                  <td className="px-4 py-4 align-middle">
+                    <input
+                      type="checkbox"
+                      checked={selectedEvents.includes(event.event_id || event.EventID)}
+                      onChange={() => toggleSelectEvent(event.event_id || event.EventID)}
+                      className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                    />
+                  </td>
+                  <td className="px-4 py-4 whitespace-nowrap font-medium text-white align-middle">{event.event_type}</td>
+                  <td className="px-4 py-4 whitespace-nowrap text-gray-200 align-middle">{event.event_action}</td>
+                  <td className="px-4 py-4 whitespace-nowrap text-gray-200 align-middle font-mono text-xs">{event.agent_id}</td>
+                  <td className="px-4 py-4 whitespace-nowrap text-gray-200 align-middle font-mono text-xs">{event.event_timestamp}</td>
+                  <td className="px-4 py-4 align-middle text-center">
+                    <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold shadow-md bg-gradient-to-r ${event.severity?.toLowerCase() === 'critical' ? 'from-red-600 to-red-900' : event.severity?.toLowerCase() === 'high' ? 'from-orange-500 to-orange-900' : event.severity?.toLowerCase() === 'medium' ? 'from-yellow-500 to-yellow-900' : event.severity?.toLowerCase() === 'low' ? 'from-green-500 to-green-900' : 'from-blue-500 to-blue-900'} text-white`}>{event.severity}</span>
+                  </td>
+                  <td className="px-4 py-4 align-middle text-center">
+                    <button
+                      onClick={() => setShowDetails(event)}
+                      className="px-3 py-1 rounded-full bg-purple-700 text-white font-medium shadow hover:bg-purple-800 transition-all duration-150"
+                    >
+                      View Details
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
-      {/* Pagination */}
-      <div className="px-4 py-6 flex justify-center items-center gap-3 animate-fadeInUp">
-        <button
-          onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-          disabled={currentPage === 1}
-          className="px-4 py-2 rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-semibold shadow hover:scale-105 transition-all disabled:opacity-50"
-        >Prev</button>
-        <span className="mx-2 text-lg font-bold">Page {currentPage} / {totalPages || 1}</span>
-        <button
-          onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-          disabled={currentPage === totalPages || totalPages === 0}
-          className="px-4 py-2 rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-semibold shadow hover:scale-105 transition-all disabled:opacity-50"
-        >Next</button>
-      </div>
+      {/* Phân trang */}
+      {totalPages > 1 && (
+        <div className="px-4 py-6 flex items-center justify-between bg-white/10 rounded-2xl shadow-xl border border-white/10 animate-fadeIn">
+          <div className="flex items-center gap-4">
+            <span className="text-gray-300 text-sm">
+              Showing {startIndex + 1} to {Math.min(endIndex, filtered.length)} of {filtered.length} events
+            </span>
+            <span className="text-gray-400 text-sm">
+              Page {currentPage} of {totalPages}
+            </span>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            {/* Nút Previous */}
+            <button
+              onClick={goToPrevPage}
+              disabled={currentPage === 1}
+              className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                currentPage === 1 
+                  ? 'bg-gray-700 text-gray-500 cursor-not-allowed' 
+                  : 'bg-purple-600 text-white hover:bg-purple-700 hover:scale-105'
+              }`}
+            >
+              Previous
+            </button>
+            
+            {/* Các nút số trang */}
+            <div className="flex gap-1">
+              {/* Trang đầu */}
+              {currentPage > 3 && (
+                <button
+                  onClick={() => goToPage(1)}
+                  className="px-3 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 transition-colors"
+                >
+                  1
+                </button>
+              )}
+              
+              {/* Dấu ... */}
+              {currentPage > 4 && (
+                <span className="px-3 py-2 text-gray-400">...</span>
+              )}
+              
+              {/* Các trang xung quanh trang hiện tại */}
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                const page = currentPage - 2 + i;
+                if (page > 0 && page <= totalPages) {
+                  return (
+                    <button
+                      key={page}
+                      onClick={() => goToPage(page)}
+                      className={`px-3 py-2 rounded-lg font-medium transition-all duration-200 ${
+                        page === currentPage
+                          ? 'bg-purple-800 text-white scale-110'
+                          : 'bg-purple-600 text-white hover:bg-purple-700 hover:scale-105'
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  );
+                }
+                return null;
+              })}
+              
+              {/* Dấu ... */}
+              {currentPage < totalPages - 3 && (
+                <span className="px-3 py-2 text-gray-400">...</span>
+              )}
+              
+              {/* Trang cuối */}
+              {currentPage < totalPages - 2 && (
+                <button
+                  onClick={() => goToPage(totalPages)}
+                  className="px-3 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 transition-colors"
+                >
+                  {totalPages}
+                </button>
+              )}
+            </div>
+            
+            {/* Nút Next */}
+            <button
+              onClick={goToNextPage}
+              disabled={currentPage === totalPages}
+              className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                currentPage === totalPages 
+                  ? 'bg-gray-700 text-gray-500 cursor-not-allowed' 
+                  : 'bg-purple-600 text-white hover:bg-purple-700 hover:scale-105'
+              }`}
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Event Details Modal */}
       {showDetails && (
