@@ -9,13 +9,20 @@
   box-sizing: border-box;
 }
 
+:root {
+  --transition-duration: 0.3s;
+  --transition-timing: cubic-bezier(0.4, 0, 0.2, 1);
+  --theme-transition-duration: 0.4s;
+}
+
 body {
   font-family: 'Inter', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background-color: #fff;
   color: #222;
-  transition: background 0.3s, color 0.3s;
+  transition: background-color var(--theme-transition-duration) var(--transition-timing), 
+              color var(--theme-transition-duration) var(--transition-timing);
 }
 
 html.dark body {
@@ -23,19 +30,83 @@ html.dark body {
   color: #f1f5f9;
 }
 
+/* Enhanced theme transition system */
+.theme-transitioning,
+.theme-transitioning * {
+  transition: background-color var(--theme-transition-duration) var(--transition-timing),
+              border-color var(--theme-transition-duration) var(--transition-timing),
+              color var(--theme-transition-duration) var(--transition-timing),
+              box-shadow var(--theme-transition-duration) var(--transition-timing),
+              opacity var(--theme-transition-duration) var(--transition-timing) !important;
+}
+
+/* View Transitions API support for ultra-smooth theme switching */
+@supports (view-transition-name: none) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: var(--theme-transition-duration);
+    animation-timing-function: var(--transition-timing);
+  }
+  
+  ::view-transition-old(root) {
+    animation-name: theme-fade-out;
+  }
+  
+  ::view-transition-new(root) {
+    animation-name: theme-fade-in;
+  }
+  
+  /* Smooth slide transition */
+  ::view-transition-group(root) {
+    animation-duration: var(--theme-transition-duration);
+    animation-timing-function: var(--transition-timing);
+  }
+}
+
+@keyframes theme-fade-out {
+  0% { 
+    opacity: 1; 
+    transform: scale(1) translateY(0);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(0.98) translateY(-2px);
+  }
+  100% { 
+    opacity: 0; 
+    transform: scale(0.96) translateY(-4px);
+  }
+}
+
+@keyframes theme-fade-in {
+  0% { 
+    opacity: 0; 
+    transform: scale(1.02) translateY(4px);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.01) translateY(2px);
+  }
+  100% { 
+    opacity: 1; 
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Smooth gradient transitions for components */
 .min-h-screen {
-  transition: background 0.3s, color 0.3s;
+  transition: background var(--theme-transition-duration) var(--transition-timing);
 }
 
 .bg-gradient-to-br {
-  transition: background 0.3s;
+  transition: background var(--theme-transition-duration) var(--transition-timing);
 }
 
 .text-white, .text-gray-800 {
-  transition: color 0.3s;
+  transition: color var(--theme-transition-duration) var(--transition-timing);
 }
 
-/* Đảm bảo các vùng chính có dark mode đẹp */
+/* Enhanced dark mode styling */
 .dark .bg-white\/10 {
   background-color: rgba(30,41,59,0.7) !important;
 }
@@ -58,36 +129,58 @@ html.dark body {
   color: #f1f5f9 !important;
 }
 
-/* Custom scrollbar */
+/* Enhanced scrollbar with smooth transitions */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
+  transition: all var(--transition-duration) var(--transition-timing);
 }
 
 ::-webkit-scrollbar-track {
   background: #f1f5f9;
   border-radius: 3px;
+  transition: background var(--theme-transition-duration) var(--transition-timing);
 }
 
 ::-webkit-scrollbar-thumb {
   background: #cbd5e1;
   border-radius: 3px;
+  transition: background var(--theme-transition-duration) var(--transition-timing);
 }
 
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
 
-/* Glass morphism effect */
+/* Dark mode scrollbar */
+.dark ::-webkit-scrollbar-track {
+  background: #1e293b;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #475569;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
+/* Glass morphism effect with theme awareness */
 .glass {
   background: rgba(255, 255, 255, 0.25);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.18);
+  transition: all var(--theme-transition-duration) var(--transition-timing);
 }
 
-/* Card hover effects */
+.dark .glass {
+  background: rgba(15, 23, 42, 0.25);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+/* Enhanced card hover effects */
 .card-hover {
-  transition: all 0.3s ease;
+  transition: all var(--transition-duration) ease;
 }
 
 .card-hover:hover {
@@ -95,15 +188,27 @@ html.dark body {
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 }
 
-/* Gradient text */
+.dark .card-hover:hover {
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
+}
+
+/* Gradient text with theme support */
 .gradient-text {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  transition: all var(--theme-transition-duration) var(--transition-timing);
 }
 
-/* Status indicators */
+.dark .gradient-text {
+  background: linear-gradient(135deg, #818cf8 0%, #c084fc 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Status indicators with smooth animations */
 .status-indicator {
   position: relative;
   display: inline-block;
@@ -119,6 +224,7 @@ html.dark body {
   height: 8px;
   border-radius: 50%;
   animation: pulse 2s infinite;
+  transition: background-color var(--theme-transition-duration) var(--transition-timing);
 }
 
 .status-online::before {
@@ -133,7 +239,7 @@ html.dark body {
   background-color: #f59e0b;
 }
 
-/* Loading animations */
+/* Enhanced loading animations */
 .loading-spinner {
   animation: spin 1s linear infinite;
 }
@@ -143,9 +249,21 @@ html.dark body {
   to { transform: rotate(360deg); }
 }
 
-/* Button animations */
+/* Pulse animation for theme indicators */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.1);
+  }
+}
+
+/* Enhanced button animations */
 .btn-animate {
-  transition: all 0.2s ease;
+  transition: all var(--transition-duration) ease;
   position: relative;
   overflow: hidden;
 }
@@ -165,9 +283,13 @@ html.dark body {
   left: 100%;
 }
 
-/* Form focus styles */
+.dark .btn-animate::before {
+  background: linear-gradient(90deg, transparent, rgba(148, 163, 184, 0.2), transparent);
+}
+
+/* Form focus styles with theme support */
 .form-input {
-  transition: all 0.2s ease;
+  transition: all var(--transition-duration) ease;
 }
 
 .form-input:focus {
@@ -175,15 +297,25 @@ html.dark body {
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
-/* Chart container */
+.dark .form-input:focus {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+}
+
+/* Chart container with theme awareness */
 .chart-container {
   background: rgba(255, 255, 255, 0.8);
   backdrop-filter: blur(10px);
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all var(--theme-transition-duration) var(--transition-timing);
 }
 
-/* Code syntax highlighting */
+.dark .chart-container {
+  background: rgba(30, 41, 59, 0.8);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+/* Code syntax highlighting with theme support */
 .code-block {
   background: #1e293b;
   color: #f1f5f9;
@@ -191,9 +323,15 @@ html.dark body {
   padding: 16px;
   font-family: 'Fira Code', monospace;
   overflow-x: auto;
+  transition: all var(--theme-transition-duration) var(--transition-timing);
 }
 
-/* Toast animations */
+.dark .code-block {
+  background: #0f172a;
+  color: #e2e8f0;
+}
+
+/* Toast animations with theme support */
 @keyframes fade-in-up {
   from {
     opacity: 0;
@@ -209,7 +347,7 @@ html.dark body {
   animation: fade-in-up 0.3s ease-out;
 }
 
-/* Notification animations */
+/* Notification animations with smooth theme transitions */
 .notification-enter {
   opacity: 0;
   transform: translateX(100%);
@@ -218,7 +356,7 @@ html.dark body {
 .notification-enter-active {
   opacity: 1;
   transform: translateX(0);
-  transition: all 0.3s ease;
+  transition: all var(--transition-duration) ease;
 }
 
 .notification-exit {
@@ -229,5 +367,192 @@ html.dark body {
 .notification-exit-active {
   opacity: 0;
   transform: translateX(100%);
-  transition: all 0.3s ease;
+  transition: all var(--transition-duration) ease;
+}
+
+/* Theme toggle specific animations */
+@keyframes theme-switch-glow {
+  0% {
+    box-shadow: 0 0 5px rgba(59, 130, 246, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.6);
+  }
+  100% {
+    box-shadow: 0 0 5px rgba(59, 130, 246, 0.3);
+  }
+}
+
+.dark .theme-switch-glow {
+  animation: theme-switch-glow 2s ease-in-out infinite;
+}
+
+/* Enhanced backdrop blur support */
+@supports (backdrop-filter: blur(10px)) {
+  .backdrop-blur-xl {
+    backdrop-filter: blur(16px);
+  }
+  
+  .backdrop-blur-lg {
+    backdrop-filter: blur(12px);
+  }
+  
+  .backdrop-blur-sm {
+    backdrop-filter: blur(4px);
+  }
+}
+
+/* Smooth color transitions for all interactive elements */
+button, input, select, textarea, a {
+  transition: all var(--transition-duration) var(--transition-timing);
+}
+
+/* Enhanced focus rings with theme awareness */
+.focus\:ring-2:focus {
+  transition: box-shadow var(--transition-duration) var(--transition-timing);
+}
+
+.dark .focus\:ring-blue-500:focus {
+  --tw-ring-color: rgb(99 102 241);
+}
+
+/* Improved animations for page transitions */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.4s ease-out;
+}
+
+.animate-fadeInDown {
+  animation: fadeInDown 0.4s ease-out;
+}
+
+.animate-fadeInUp {
+  animation: fadeInUp 0.4s ease-out;
+}
+
+/* Theme-aware selection colors */
+::selection {
+  background-color: rgba(59, 130, 246, 0.3);
+  color: inherit;
+}
+
+.dark ::selection {
+  background-color: rgba(99, 102, 241, 0.4);
+  color: inherit;
+}
+
+/* Enhanced shadow system for dark mode */
+.shadow-xl {
+  transition: box-shadow var(--theme-transition-duration) var(--transition-timing);
+}
+
+.dark .shadow-xl {
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
+}
+
+.shadow-lg {
+  transition: box-shadow var(--theme-transition-duration) var(--transition-timing);
+}
+
+.dark .shadow-lg {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.1);
+}
+
+/* Smooth border transitions */
+.border, .border-t, .border-b, .border-l, .border-r {
+  transition: border-color var(--theme-transition-duration) var(--transition-timing);
+}
+
+/* Enhanced table styling with theme support */
+table {
+  transition: all var(--theme-transition-duration) var(--transition-timing);
+}
+
+.dark table {
+  color: #f1f5f9;
+}
+
+/* Improved form element styling */
+input, select, textarea {
+  transition: all var(--transition-duration) var(--transition-timing);
+}
+
+.dark input, .dark select, .dark textarea {
+  background-color: rgba(30, 41, 59, 0.5);
+  border-color: rgba(148, 163, 184, 0.3);
+  color: #f1f5f9;
+}
+
+.dark input:focus, .dark select:focus, .dark textarea:focus {
+  border-color: rgba(99, 102, 241, 0.5);
+  background-color: rgba(30, 41, 59, 0.7);
+}
+
+/* Color scheme meta tag support */
+.dark {
+  color-scheme: dark;
+}
+
+/* Prefers reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  
+  .theme-transitioning,
+  .theme-transitioning * {
+    transition: none !important;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .dark {
+    --tw-bg-opacity: 1;
+    background-color: rgb(0 0 0 / var(--tw-bg-opacity));
+    color: rgb(255 255 255);
+  }
+  
+  :not(.dark) {
+    --tw-bg-opacity: 1;
+    background-color: rgb(255 255 255 / var(--tw-bg-opacity));
+    color: rgb(0 0 0);
+  }
 }

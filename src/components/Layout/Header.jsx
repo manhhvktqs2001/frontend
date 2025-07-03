@@ -25,8 +25,142 @@ import { fetchDashboardStats, fetchAlerts, fetchAgents } from '../../service/api
 import { useTheme } from '../../contexts/ThemeContext';
 import { useToast } from '../../contexts/ToastContext';
 
+// Enhanced Theme Toggle Component
+const ThemeToggle = ({ className = "" }) => {
+  const { isDarkMode, toggleTheme, isTransitioning } = useTheme();
+  const [isAnimating, setIsAnimating] = useState(false);
+
+  const handleToggle = () => {
+    if (isAnimating || isTransitioning) return;
+    
+    setIsAnimating(true);
+    toggleTheme();
+    
+    // Reset animation state
+    setTimeout(() => setIsAnimating(false), 600);
+  };
+
+  return (
+    <button
+      onClick={handleToggle}
+      disabled={isAnimating || isTransitioning}
+      className={`
+        relative w-16 h-8 rounded-full transition-all duration-300 ease-in-out
+        focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-indigo-500
+        ${isDarkMode 
+          ? 'bg-gradient-to-r from-indigo-600 to-purple-600 shadow-lg shadow-indigo-500/25' 
+          : 'bg-gradient-to-r from-amber-400 to-orange-500 shadow-lg shadow-amber-500/25'
+        }
+        hover:scale-105 active:scale-95
+        ${(isAnimating || isTransitioning) ? 'pointer-events-none' : ''}
+        ${className}
+      `}
+      aria-label={`Switch to ${isDarkMode ? 'light' : 'dark'} mode`}
+      title={`Switch to ${isDarkMode ? 'light' : 'dark'} mode`}
+    >
+      {/* Track highlight */}
+      <div 
+        className={`
+          absolute inset-0 rounded-full transition-all duration-300
+          ${isDarkMode 
+            ? 'bg-gradient-to-r from-slate-800 to-slate-900' 
+            : 'bg-gradient-to-r from-sky-200 to-blue-300'
+          }
+          opacity-20
+        `}
+      />
+      
+      {/* Sliding circle */}
+      <div
+        className={`
+          absolute top-0.5 w-7 h-7 rounded-full transition-all duration-300 ease-in-out
+          transform shadow-lg backdrop-blur-sm
+          ${isDarkMode 
+            ? 'translate-x-8 bg-gradient-to-br from-slate-100 to-white shadow-slate-900/20' 
+            : 'translate-x-0.5 bg-gradient-to-br from-white to-yellow-50 shadow-orange-900/20'
+          }
+          ${(isAnimating || isTransitioning) ? 'scale-110' : 'hover:scale-105'}
+          flex items-center justify-center
+        `}
+      >
+        {/* Moon Icon */}
+        <div 
+          className={`
+            absolute transition-all duration-500 ease-in-out
+            ${isDarkMode ? 'rotate-0 opacity-100 scale-100' : 'rotate-180 opacity-0 scale-75'}
+          `}
+        >
+          <MoonIcon 
+            className={`
+              w-4 h-4 transition-colors duration-300
+              ${isDarkMode ? 'text-slate-700' : 'text-slate-400'}
+            `} 
+          />
+        </div>
+        
+        {/* Sun Icon */}
+        <div 
+          className={`
+            absolute transition-all duration-500 ease-in-out
+            ${!isDarkMode ? 'rotate-0 opacity-100 scale-100' : 'rotate-180 opacity-0 scale-75'}
+          `}
+        >
+          <SunIcon 
+            className={`
+              w-4 h-4 transition-colors duration-300
+              ${!isDarkMode ? 'text-amber-600' : 'text-amber-400'}
+            `} 
+          />
+        </div>
+      </div>
+      
+      {/* Glow effect */}
+      <div 
+        className={`
+          absolute inset-0 rounded-full transition-all duration-300 opacity-0 hover:opacity-30
+          ${isDarkMode 
+            ? 'bg-gradient-to-r from-indigo-400 to-purple-400' 
+            : 'bg-gradient-to-r from-amber-300 to-orange-400'
+          }
+          blur-sm -z-10
+        `}
+      />
+      
+      {/* Status indicator dots */}
+      <div className="absolute -top-1 -right-1 flex space-x-0.5">
+        <div 
+          className={`
+            w-1 h-1 rounded-full transition-all duration-300
+            ${isDarkMode ? 'bg-indigo-400 shadow-indigo-400/50 shadow-sm' : 'bg-amber-400 shadow-amber-400/50 shadow-sm'}
+            ${(isAnimating || isTransitioning) ? 'animate-pulse' : ''}
+          `}
+        />
+        <div 
+          className={`
+            w-1 h-1 rounded-full transition-all duration-300 delay-75
+            ${isDarkMode ? 'bg-purple-400 shadow-purple-400/50 shadow-sm' : 'bg-orange-400 shadow-orange-400/50 shadow-sm'}
+            ${(isAnimating || isTransitioning) ? 'animate-pulse' : ''}
+          `}
+        />
+      </div>
+      
+      {/* Loading indicator when transitioning */}
+      {(isAnimating || isTransitioning) && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div 
+            className={`
+              w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin
+              ${isDarkMode ? 'text-white' : 'text-slate-700'}
+            `}
+          />
+        </div>
+      )}
+    </button>
+  );
+};
+
 const Header = ({ user = { name: 'Đức Mạnh', role: 'Security Analyst', avatar: null } }) => {
-  const { isDarkMode, toggleTheme } = useTheme();
+  const { isDarkMode, isTransitioning } = useTheme();
   const { showAlert, showSuccess } = useToast();
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -114,95 +248,52 @@ const Header = ({ user = { name: 'Đức Mạnh', role: 'Security Analyst', avat
     setNotifications(mockNotifications);
   }, []);
 
-  // Get notification icon and colors
-  const getNotificationStyle = (type) => {
-    const styles = {
-      critical: {
-        icon: ExclamationTriangleIcon,
-        bgColor: 'bg-red-900/60',
-        textColor: 'text-red-200',
-        iconColor: 'text-red-400'
-      },
-      warning: {
-        icon: ExclamationTriangleIcon,
-        bgColor: 'bg-orange-900/60',
-        textColor: 'text-orange-200',
-        iconColor: 'text-orange-400'
-      },
-      info: {
-        icon: InformationCircleIcon,
-        bgColor: 'bg-blue-900/60',
-        textColor: 'text-blue-200',
-        iconColor: 'text-blue-400'
-      },
-      success: {
-        icon: CheckCircleIcon,
-        bgColor: 'bg-green-900/60',
-        textColor: 'text-green-200',
-        iconColor: 'text-green-400'
-      }
-    };
-    return styles[type] || styles.info;
-  };
-
-  // Get threat level color
-  const getThreatLevelColor = (level) => {
-    const colors = {
-      'Low': 'text-green-400 bg-green-900/60',
-      'Medium': 'text-yellow-400 bg-yellow-900/60',
-      'High': 'text-orange-400 bg-orange-900/60',
-      'Critical': 'text-red-400 bg-red-900/60'
-    };
-    return colors[level] || colors.Medium;
-  };
-
-  // Mark notification as read
-  const markAsRead = (notificationId) => {
-    setNotifications(prev =>
-      prev.map(notification =>
-        notification.id === notificationId
-          ? { ...notification, unread: false }
-          : notification
-      )
-    );
-  };
-
-  // Mark all as read
-  const markAllAsRead = () => {
-    setNotifications(prev =>
-      prev.map(notification => ({ ...notification, unread: false }))
-    );
-  };
-
-  // Get unread count
-  const unreadCount = notifications.filter(n => n.unread).length;
-
-  // Handle search
-  const handleSearch = (e) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      console.log('Searching for:', searchQuery);
-      // Implement search functionality
-    }
-  };
-
   return (
-    <header className="sticky top-0 z-40 flex items-center justify-between px-6 py-3 bg-white dark:bg-gray-900 shadow">
-      <div className="text-2xl font-bold tracking-tight text-gray-800 dark:text-white select-none">
+    <header className={`
+      sticky top-0 z-40 flex items-center justify-between px-6 py-3 shadow-lg border-b transition-all duration-300
+      ${isDarkMode 
+        ? 'bg-gray-900/95 border-gray-700/50 backdrop-blur-xl' 
+        : 'bg-white/95 border-gray-200/50 backdrop-blur-xl'
+      }
+      ${isTransitioning ? 'theme-transitioning' : ''}
+    `}>
+      <div className={`
+        text-2xl font-bold tracking-tight select-none transition-colors duration-300
+        ${isDarkMode ? 'text-white' : 'text-gray-800'}
+      `}>
         EDR Dashboard
       </div>
+      
       <div className="flex items-center gap-4">
-        <button
-          onClick={toggleTheme}
-          className="w-10 h-10 flex items-center justify-center rounded-full border border-gray-300 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition"
-          aria-label="Toggle theme"
-        >
-          {isDarkMode ? (
-            <svg width="22" height="22" fill="none" viewBox="0 0 24 24"><path fill="currentColor" d="M21 12.79A9 9 0 0 1 12.79 3a1 1 0 0 0-1.13 1.13A7 7 0 1 0 20.87 13.92a1 1 0 0 0 1.13-1.13Z"/></svg>
-          ) : (
-            <svg width="22" height="22" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5" fill="currentColor"/><path stroke="currentColor" strokeWidth="2" d="M12 1v2m0 18v2m11-11h-2M3 12H1m16.95 7.07-1.41-1.41M6.46 6.46 5.05 5.05m12.02 0-1.41 1.41M6.46 17.54l-1.41 1.41"/></svg>
-          )}
-        </button>
+        {/* Theme status indicator */}
+        {isTransitioning && (
+          <div className={`
+            flex items-center space-x-2 px-3 py-1 rounded-full text-xs font-medium transition-all duration-300
+            ${isDarkMode 
+              ? 'bg-indigo-900/50 text-indigo-300 border border-indigo-700/50' 
+              : 'bg-indigo-100/50 text-indigo-600 border border-indigo-200/50'
+            }
+          `}>
+            <div 
+              className={`
+                w-2 h-2 rounded-full animate-pulse
+                ${isDarkMode ? 'bg-indigo-400' : 'bg-indigo-500'}
+              `} 
+            />
+            <span>Switching theme...</span>
+          </div>
+        )}
+        
+        {/* Theme Toggle */}
+        <div className="flex items-center space-x-2">
+          <span className={`
+            text-sm font-medium transition-colors duration-300 hidden sm:block
+            ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}
+          `}>
+            {isDarkMode ? 'Dark' : 'Light'}
+          </span>
+          <ThemeToggle />
+        </div>
       </div>
     </header>
   );
