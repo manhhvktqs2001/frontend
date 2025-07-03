@@ -44,8 +44,9 @@ const App = () => {
             </Routes>
           </main>
         </div>
-        {/* Custom Toast Container */}
-        <ToastContainer />
+        
+        {/* Toast Container - Hiển thị notifications */}
+        <ToastContainer position="top-right" maxToasts={5} />
       </div>
     </QueryClientProvider>
   );
