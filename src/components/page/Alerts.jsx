@@ -558,11 +558,20 @@ const Alerts = () => {
       {totalPages > 1 && (
         <div className="px-4 py-6 flex items-center justify-between bg-white/10 rounded-2xl shadow-xl border border-white/10 animate-fadeIn">
           <div className="flex items-center gap-4">
-            <span className="text-gray-300 text-sm">
-              Showing {startIndex + 1} to {Math.min(endIndex, filtered.length)} of {filtered.length} alerts
+            <span className={`text-sm ${isDarkMode ? 'text-purple-200' : 'text-purple-700'} font-semibold`}>
+              <span className="">Showing</span>
+              <span className={`mx-1 ${isDarkMode ? 'text-green-400' : 'text-green-700'} font-bold`}>{startIndex + 1}</span>
+              <span className="">to</span>
+              <span className={`mx-1 ${isDarkMode ? 'text-green-400' : 'text-green-700'} font-bold`}>{Math.min(endIndex, filtered.length)}</span>
+              <span className="">of</span>
+              <span className={`mx-1 ${isDarkMode ? 'text-blue-400' : 'text-blue-700'} font-bold`}>{filtered.length}</span>
+              <span className="">alerts</span>
             </span>
-            <span className="text-gray-400 text-sm">
-              Page {currentPage} of {totalPages}
+            <span className={`text-sm font-semibold ${isDarkMode ? 'text-orange-300' : 'text-orange-700'}`}>|
+              <span className="ml-2">Page</span>
+              <span className={`mx-1 px-2 py-1 rounded-lg ${isDarkMode ? 'bg-purple-800 text-white' : 'bg-purple-100 text-purple-800'} font-bold`}>{currentPage}</span>
+              <span className="">of</span>
+              <span className={`mx-1 px-2 py-1 rounded-lg ${isDarkMode ? 'bg-blue-800 text-white' : 'bg-blue-100 text-blue-800'} font-bold`}>{totalPages}</span>
             </span>
           </div>
           <div className="flex items-center gap-2">

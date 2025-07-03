@@ -215,4 +215,10 @@ export const fetchHealthStatus = async () => {
   return response.data;
 };
 
+// Advanced Event Search (for Threat Hunting)
+export const searchEvents = async (searchParams = {}) => {
+  const response = await api.post('/events/search', searchParams);
+  return response.data;
+};
+
 export default api;

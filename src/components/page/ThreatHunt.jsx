@@ -21,6 +21,7 @@ import {
   ShieldCheckIcon,
   BoltIcon
 } from '@heroicons/react/24/outline';
+import { searchEvents } from '../../service/api';
 
 const ThreatHunt = () => {
   const [activeTab, setActiveTab] = useState('query');
@@ -139,49 +140,59 @@ const ThreatHunt = () => {
 
     setIsRunning(true);
     try {
-      // Simulate API call
-      const response = await fetch('http://192.168.20.85:5000/api/v1/threat-hunt/execute', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          query: huntQuery,
-          filters: filters
-        })
-      });
+      // Build search params for backend
+      const searchParams = {};
+      // Map filters to backend fields
+      // Time range
+      const now = new Date();
+      let start_time = null;
+      if (filters.timeRange === '1h') {
+        start_time = new Date(now.getTime() - 1 * 60 * 60 * 1000);
+      } else if (filters.timeRange === '24h') {
+        start_time = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      } else if (filters.timeRange === '7d') {
+        start_time = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      } else if (filters.timeRange === '30d') {
+        start_time = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      }
+      if (start_time) {
+        searchParams.start_time = start_time.toISOString();
+      }
+      // Data source
+      if (filters.dataSource && filters.dataSource !== 'all') {
+        // Map UI value to backend EventType
+        const typeMap = {
+          process: 'Process',
+          network: 'Network',
+          file: 'File',
+          registry: 'Registry',
+          authentication: 'Authentication',
+        };
+        searchParams.event_type = typeMap[filters.dataSource];
+      }
+      // Severity
+      if (filters.severity && filters.severity !== 'all') {
+        const sevMap = {
+          low: 'LOW',
+          medium: 'MEDIUM',
+          high: 'HIGH',
+          critical: 'CRITICAL',
+        };
+        searchParams.severity = sevMap[filters.severity];
+      }
+      // Search text (from huntQuery)
+      searchParams.search_text = huntQuery;
+      searchParams.limit = 100;
+      searchParams.offset = 0;
 
-      const data = await response.json();
-      setResults(data.results || []);
+      // Call backend
+      const data = await searchEvents(searchParams);
+      setResults(data.events || []);
       setActiveTab('results');
     } catch (error) {
       console.error('Hunt execution failed:', error);
-      // Use mock data for demo
-      setTimeout(() => {
-        setResults([
-          {
-            id: 1,
-            timestamp: '2025-01-02T10:30:00Z',
-            event_type: 'process',
-            agent_id: 'WIN-SRV-001',
-            process_name: 'powershell.exe',
-            command_line: 'powershell.exe -enc UwB0AGEAcgB0AC0AUAByAG8AYwBlAHMAcwA=',
-            severity: 'High',
-            confidence: 85
-          },
-          {
-            id: 2,
-            timestamp: '2025-01-02T10:25:00Z',
-            event_type: 'network',
-            agent_id: 'WIN-WS-045',
-            dest_ip: '192.168.1.100',
-            bytes_out: 1500000,
-            severity: 'Medium',
-            confidence: 70
-          }
-        ]);
-        setActiveTab('results');
-      }, 2000);
+      setResults([]);
+      setActiveTab('results');
     } finally {
       setIsRunning(false);
     }
@@ -426,57 +437,54 @@ const ThreatHunt = () => {
         {results.length > 0 ? (
           <div className="space-y-4">
             {results.map(result => (
-              <div key={result.id} className="bg-white/80 rounded-xl p-5 border border-gray-200">
+              <div key={result.event_id} className="bg-white/80 rounded-xl p-5 border border-gray-200">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center space-x-3">
                     <div className={`p-2 rounded-lg ${
-                      result.event_type === 'process' ? 'bg-blue-100 text-blue-600' :
-                      result.event_type === 'network' ? 'bg-purple-100 text-purple-600' :
-                      result.event_type === 'file' ? 'bg-green-100 text-green-600' :
+                      result.event_type === 'Process' ? 'bg-blue-100 text-blue-600' :
+                      result.event_type === 'Network' ? 'bg-purple-100 text-purple-600' :
+                      result.event_type === 'File' ? 'bg-green-100 text-green-600' :
                       'bg-gray-100 text-gray-600'
                     }`}>
-                      {result.event_type === 'process' ? <CpuChipIcon className="w-5 h-5" /> :
-                       result.event_type === 'network' ? <GlobeAltIcon className="w-5 h-5" /> :
-                       result.event_type === 'file' ? <DocumentTextIcon className="w-5 h-5" /> :
+                      {result.event_type === 'Process' ? <CpuChipIcon className="w-5 h-5" /> :
+                       result.event_type === 'Network' ? <GlobeAltIcon className="w-5 h-5" /> :
+                       result.event_type === 'File' ? <DocumentTextIcon className="w-5 h-5" /> :
                        <ChartBarIcon className="w-5 h-5" />}
                     </div>
                     <div>
                       <h4 className="font-semibold text-gray-900">
-                        {result.process_name || result.event_type} Event
+                        {result.primary_indicator || result.event_type} Event
                       </h4>
                       <p className="text-sm text-gray-600">
-                        Agent: {result.agent_id} | {new Date(result.timestamp).toLocaleString()}
+                        Agent: {result.agent_id} | {result.event_timestamp ? new Date(result.event_timestamp).toLocaleString() : ''}
                       </p>
                     </div>
                   </div>
                   
                   <div className="flex items-center space-x-2">
                     <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                      result.severity === 'High' ? 'bg-orange-100 text-orange-800' :
-                      result.severity === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
+                      result.severity === 'High' || result.severity === 'HIGH' ? 'bg-orange-100 text-orange-800' :
+                      result.severity === 'Medium' || result.severity === 'MEDIUM' ? 'bg-yellow-100 text-yellow-800' :
+                      result.severity === 'Critical' || result.severity === 'CRITICAL' ? 'bg-red-100 text-red-800' :
                       'bg-gray-100 text-gray-800'
                     }`}>
                       {result.severity}
                     </span>
+                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                      result.threat_level === 'Malicious' ? 'bg-red-100 text-red-800' :
+                      result.threat_level === 'Suspicious' ? 'bg-orange-100 text-orange-800' :
+                      result.threat_level === 'None' ? 'bg-gray-100 text-gray-800' :
+                      'bg-gray-100 text-gray-800'
+                    }`}>
+                      {result.threat_level}
+                    </span>
                     <span className="text-xs text-gray-500">
-                      {result.confidence}% confidence
+                      Risk: {result.risk_score}
                     </span>
                   </div>
                 </div>
                 
-                <div className="bg-gray-50 rounded-lg p-3">
-                  <div className="text-sm text-gray-700">
-                    {result.command_line && (
-                      <div><strong>Command:</strong> <code className="text-xs">{result.command_line}</code></div>
-                    )}
-                    {result.dest_ip && (
-                      <div><strong>Destination:</strong> {result.dest_ip}</div>
-                    )}
-                    {result.bytes_out && (
-                      <div><strong>Bytes Out:</strong> {result.bytes_out.toLocaleString()}</div>
-                    )}
-                  </div>
-                </div>
+                {/* Optionally show more details if needed */}
               </div>
             ))}
           </div>

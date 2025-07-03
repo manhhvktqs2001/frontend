@@ -1160,22 +1160,28 @@ const Rules = () => {
       {/* Create Rule Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-[2px] p-2">
-          <div className="bg-gradient-to-br from-slate-900 via-indigo-950 to-purple-950 border border-white/10 rounded-3xl shadow-3xl max-w-5xl w-full max-h-[85vh] overflow-y-auto relative animate-fadeIn">
-            <div className="flex items-center justify-between p-6 border-b border-white/10">
+          <div className={`max-w-5xl w-full max-h-[85vh] overflow-y-auto relative animate-fadeIn rounded-3xl shadow-3xl border transition-all duration-300
+            ${isDarkMode
+              ? 'bg-gradient-to-br from-slate-900 via-indigo-950 to-purple-950 border-white/10 text-white'
+              : 'bg-white border border-gray-200 text-gray-900'}
+          `}>
+            <div className={`flex items-center justify-between p-6 border-b transition-colors duration-300
+              ${isDarkMode ? 'border-white/10' : 'border-gray-200'}
+            `}>
               <div className="flex items-center gap-3">
-                <PlusIcon className="w-8 h-8 text-blue-400" />
-                <h2 className="text-2xl font-bold text-white">Tạo Rule Mới</h2>
+                <PlusIcon className={`w-8 h-8 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`} />
+                <h2 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Tạo Rule Mới</h2>
               </div>
               <button
                 onClick={() => setShowCreateModal(false)}
                 className="p-2 rounded-lg hover:bg-purple-900/40 transition-colors group"
                 aria-label="Đóng"
               >
-                <XCircleIcon className="w-7 h-7 text-gray-300 group-hover:text-red-400 transition-colors" />
+                <XCircleIcon className={`w-7 h-7 ${isDarkMode ? 'text-gray-300 group-hover:text-red-400' : 'text-gray-400 group-hover:text-red-500'} transition-colors`} />
               </button>
             </div>
             <form
-              className="grid grid-cols-1 md:grid-cols-2 gap-10 p-8 bg-gradient-to-br from-white/10 to-slate-900 rounded-b-3xl"
+              className="grid grid-cols-1 md:grid-cols-2 gap-10 p-8 bg-transparent rounded-b-3xl"
               onSubmit={async (e) => {
                 e.preventDefault();
                 setCreateError(null);
@@ -1258,35 +1264,40 @@ const Rules = () => {
             >
               <div className="space-y-6">
                 <div>
-                  <label className="block text-sm font-bold text-gray-200 mb-1">Tên Rule <span className="text-red-400">*</span></label>
-                  <input type="text" required value={createForm.RuleName} onChange={e => setCreateForm(f => ({...f, RuleName: e.target.value}))} className="w-full px-5 py-4 rounded-xl bg-white/20 border-2 border-purple-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-400 text-white placeholder:text-gray-400 text-lg shadow transition-all duration-200" placeholder="Ví dụ: Mimikatz Credential Dumping" />
-                  <div className="text-xs text-gray-400 mt-1">Đặt tên ngắn gọn, dễ hiểu, không trùng lặp.</div>
+                  <label className={`block text-base font-bold mb-2 ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>Tên Rule <span className="text-red-400">*</span></label>
+                  <input type="text" required value={createForm.RuleName} onChange={e => setCreateForm(f => ({...f, RuleName: e.target.value}))} className={`w-full px-5 py-4 rounded-xl text-lg shadow-sm transition-all duration-200 focus:ring-2 focus:ring-purple-500 focus:border-purple-400
+                    ${isDarkMode ? 'bg-white/20 border-2 border-purple-400 text-white placeholder:text-gray-400' : 'bg-white border border-gray-300 text-gray-800 font-semibold placeholder:text-gray-400'}`} placeholder="Ví dụ: Mimikatz Credential Dumping" />
+                  <div className={`text-xs mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Đặt tên ngắn gọn, dễ hiểu, không trùng lặp.</div>
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-gray-200 mb-1">Loại Rule <span className="text-red-400">*</span></label>
+                  <label className={`block text-base font-bold mb-2 ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>Loại Rule <span className="text-red-400">*</span></label>
                   <Listbox value={createForm.RuleType} onChange={val => { setCreateForm(f => ({...f, RuleType: val, RuleCondition: ruleTypeSamples[val] || ''})); setRuleConditionValid(true); }}>
                     {({ open }) => (
                       <div className="relative">
-                        <Listbox.Button className="w-full px-4 py-3 rounded-lg bg-white/20 border-2 border-purple-400 focus:border-blue-400 text-white text-base shadow flex justify-between items-center">
+                        <Listbox.Button className={`w-full px-4 py-3 rounded-lg text-base shadow flex justify-between items-center focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all duration-150
+                          ${isDarkMode ? 'bg-white/20 border-2 border-purple-400 text-white' : 'bg-white border-2 border-purple-400 text-gray-800 font-bold hover:bg-purple-50 hover:text-purple-700'}`}>
                           {ruleTypeOptions.find(o => o.value === createForm.RuleType)?.label || 'Chọn loại Rule'}
-                          <span className="ml-2">▼</span>
+                          <ChevronUpDownIcon className="w-5 h-5 ml-2" />
                         </Listbox.Button>
-                        {open && (
-                          <Listbox.Options className="absolute z-50 mt-1 w-full bg-slate-900 border border-purple-400 rounded-lg shadow-lg max-h-60 overflow-auto">
-                            {ruleTypeOptions.map(opt => (
-                              <Listbox.Option key={opt.value} value={opt.value} className={({ active, selected }) => `cursor-pointer select-none px-4 py-2 ${active ? 'bg-purple-700 text-white' : 'text-gray-100'} ${selected ? 'font-bold' : ''}` }>
-                                {opt.label}
-                              </Listbox.Option>
-                            ))}
-                          </Listbox.Options>
-                        )}
+                        <Listbox.Options className={`absolute z-50 mt-1 w-full rounded-xl shadow-2xl max-h-60 overflow-auto transition-all duration-150
+                          ${isDarkMode ? 'bg-black border border-purple-500' : 'bg-white border border-purple-400'}`}>
+                          {ruleTypeOptions.map(opt => (
+                            <Listbox.Option key={opt.value} value={opt.value} className={({ active, selected }) =>
+                              `cursor-pointer select-none px-4 py-2 transition-all duration-100
+                              ${isDarkMode ? (active ? 'bg-purple-700 text-white' : 'text-white') : (active ? 'bg-purple-50 text-purple-700' : 'bg-white text-gray-800')}
+                              ${selected ? (isDarkMode ? 'font-bold text-purple-300' : 'font-bold text-purple-700') : ''}`
+                            }>
+                              {opt.label}
+                            </Listbox.Option>
+                          ))}
+                        </Listbox.Options>
                       </div>
                     )}
                   </Listbox>
-                  <div className="text-xs text-gray-400 mt-1">Chọn loại rule phù hợp. Khi chọn sẽ tự gợi ý điều kiện mẫu.</div>
+                  <div className={`text-xs mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Chọn loại rule phù hợp. Khi chọn sẽ tự gợi ý điều kiện mẫu.</div>
                 </div>
                 <div className="mb-3">
-                  <label className="block text-sm font-bold text-gray-200 mb-1">Loại sự kiện (Event Type)</label>
+                  <label className={`block text-base font-bold mb-2 ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>Loại sự kiện (Event Type)</label>
                   <Listbox value={eventType} onChange={val => {
                     setEventType(val);
                     if (val) {
@@ -1301,26 +1312,30 @@ const Rules = () => {
                   }}>
                     {({ open }) => (
                       <div className="relative">
-                        <Listbox.Button className="w-full px-4 py-3 rounded-lg bg-white/20 border-2 border-purple-400 focus:border-blue-400 text-white text-base shadow flex justify-between items-center">
+                        <Listbox.Button className={`w-full px-4 py-3 rounded-lg text-base shadow flex justify-between items-center focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all duration-150
+                          ${isDarkMode ? 'bg-white/20 border-2 border-purple-400 text-white' : 'bg-white border-2 border-purple-400 text-gray-800 font-bold hover:bg-purple-50 hover:text-purple-700'}`}>
                           {eventTypeOptions.find(o => o.value === eventType)?.label || 'Chọn loại sự kiện'}
-                          <span className="ml-2">▼</span>
+                          <ChevronUpDownIcon className="w-5 h-5 ml-2" />
                         </Listbox.Button>
-                        {open && (
-                          <Listbox.Options className="absolute z-50 mt-1 w-full bg-slate-900 border border-purple-400 rounded-lg shadow-lg max-h-60 overflow-auto">
-                            {eventTypeOptions.map(opt => (
-                              <Listbox.Option key={opt.value} value={opt.value} className={({ active, selected }) => `cursor-pointer select-none px-4 py-2 ${active ? 'bg-purple-700 text-white' : 'text-gray-100'} ${selected ? 'font-bold' : ''}` }>
-                                {opt.label}
-                              </Listbox.Option>
-                            ))}
-                          </Listbox.Options>
-                        )}
+                        <Listbox.Options className={`absolute z-50 mt-1 w-full rounded-xl shadow-2xl max-h-60 overflow-auto transition-all duration-150
+                          ${isDarkMode ? 'bg-black border border-purple-500' : 'bg-white border border-purple-400'}`}>
+                          {eventTypeOptions.map(opt => (
+                            <Listbox.Option key={opt.value} value={opt.value} className={({ active, selected }) =>
+                              `cursor-pointer select-none px-4 py-2 transition-all duration-100
+                              ${isDarkMode ? (active ? 'bg-purple-700 text-white' : 'text-white') : (active ? 'bg-purple-50 text-purple-700' : 'bg-white text-gray-800')}
+                              ${selected ? (isDarkMode ? 'font-bold text-purple-300' : 'font-bold text-purple-700') : ''}`
+                            }>
+                              {opt.label}
+                            </Listbox.Option>
+                          ))}
+                        </Listbox.Options>
                       </div>
                     )}
                   </Listbox>
-                  <div className="text-xs text-gray-400 mt-1">Chọn loại sự kiện để gợi ý trường và mẫu JSON phù hợp.</div>
+                  <div className={`text-xs mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Chọn loại sự kiện để gợi ý trường và mẫu JSON phù hợp.</div>
                 </div>
                 <div>
-                  <span className="font-bold text-lg text-gray-100 mb-4 block">Điều kiện Rule</span>
+                  <label className={`block text-base font-bold mb-2 ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>Điều kiện Rule</label>
                   {eventType ? (
                     <div className="bg-gradient-to-br from-slate-800 via-indigo-950 to-purple-950 rounded-2xl p-6 border-2 border-purple-500 shadow-2xl mb-4">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1380,39 +1395,44 @@ const Rules = () => {
                   ) : null}
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-gray-200 mb-1">Nền tảng (Platform) <span className="text-red-400">*</span></label>
+                  <label className={`block text-base font-bold mb-2 ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>Nền tảng (Platform) <span className="text-red-400">*</span></label>
                   <Listbox value={createForm.Platform} onChange={val => setCreateForm(f => ({...f, Platform: val}))}>
                     {({ open }) => (
                       <div className="relative">
-                        <Listbox.Button className="w-full px-4 py-3 rounded-lg bg-white/20 border-2 border-purple-400 focus:border-blue-400 text-white text-base shadow flex justify-between items-center">
+                        <Listbox.Button className={`w-full px-4 py-3 rounded-lg text-base shadow flex justify-between items-center focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all duration-150
+                          ${isDarkMode ? 'bg-white/20 border-2 border-purple-400 text-white' : 'bg-white border-2 border-purple-400 text-gray-800 font-bold hover:bg-purple-50 hover:text-purple-700'}`}>
                           {platformOptions.find(o => o.value === createForm.Platform)?.label || 'Chọn nền tảng'}
-                          <span className="ml-2">▼</span>
+                          <ChevronUpDownIcon className="w-5 h-5 ml-2" />
                         </Listbox.Button>
-                        {open && (
-                          <Listbox.Options className="absolute z-50 mt-1 w-full bg-slate-900 border border-purple-400 rounded-lg shadow-lg max-h-60 overflow-auto">
-                            {platformOptions.map(opt => (
-                              <Listbox.Option key={opt.value} value={opt.value} className={({ active, selected }) => `cursor-pointer select-none px-4 py-2 ${active ? 'bg-purple-700 text-white' : 'text-gray-100'} ${selected ? 'font-bold' : ''}` }>
-                                {opt.label}
-                              </Listbox.Option>
-                            ))}
-                          </Listbox.Options>
-                        )}
+                        <Listbox.Options className={`absolute z-50 mt-1 w-full rounded-xl shadow-2xl max-h-60 overflow-auto transition-all duration-150
+                          ${isDarkMode ? 'bg-black border border-purple-500' : 'bg-white border border-purple-400'}`}>
+                          {platformOptions.map(opt => (
+                            <Listbox.Option key={opt.value} value={opt.value} className={({ active, selected }) =>
+                              `cursor-pointer select-none px-4 py-2 transition-all duration-100
+                              ${isDarkMode ? (active ? 'bg-purple-700 text-white' : 'text-white') : (active ? 'bg-purple-50 text-purple-700' : 'bg-white text-gray-800')}
+                              ${selected ? (isDarkMode ? 'font-bold text-purple-300' : 'font-bold text-purple-700') : ''}`
+                            }>
+                              {opt.label}
+                            </Listbox.Option>
+                          ))}
+                        </Listbox.Options>
                       </div>
                     )}
                   </Listbox>
-                  <div className="text-xs text-gray-400 mt-1">Chọn hệ điều hành áp dụng rule.</div>
+                  <div className={`text-xs mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Chọn hệ điều hành áp dụng rule.</div>
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-gray-200 mb-1">Mô tả cảnh báo (alert_description) <span className="text-red-400">*</span></label>
+                  <label className={`block text-base font-bold mb-2 ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>Mô tả cảnh báo (alert_description) <span className="text-red-400">*</span></label>
                   <textarea
                     required
                     value={createForm.AlertDescription}
                     onChange={e => setCreateForm(f => ({...f, AlertDescription: e.target.value}))}
-                    className="w-full px-4 py-3 rounded-lg bg-white/20 border-2 border-purple-400 focus:border-blue-400 text-white placeholder:text-gray-400 text-base shadow"
+                    className={`w-full px-5 py-4 rounded-xl text-lg shadow transition-all duration-200 focus:ring-2 focus:ring-purple-500 focus:border-purple-400
+                      ${isDarkMode ? 'bg-white/20 border-2 border-purple-400 text-white placeholder:text-gray-400' : 'bg-white border border-gray-300 text-gray-800 font-semibold placeholder:text-gray-400'}`}
                     placeholder="Ví dụ: Phát hiện hành vi thực thi cmd.exe bất thường"
                     rows={3}
                   />
-                  <div className="text-xs text-gray-400 mt-1">Nhập mô tả ngắn gọn về cảnh báo này.</div>
+                  <div className={`text-xs mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Nhập mô tả ngắn gọn về cảnh báo này.</div>
                   {createError && createError.includes('alert_description') && (
                     <div className="text-red-400 font-medium mt-1">{createError}</div>
                   )}
@@ -1420,89 +1440,102 @@ const Rules = () => {
               </div>
               <div className="space-y-6">
                 <div>
-                  <label className="block text-sm font-bold text-gray-200 mb-1">Tiêu đề Cảnh báo <span className="text-red-400">*</span></label>
-                  <input type="text" required value={createForm.AlertTitle} onChange={e => setCreateForm(f => ({...f, AlertTitle: e.target.value}))} className="w-full px-5 py-4 rounded-xl bg-white/20 border-2 border-purple-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-400 text-white placeholder:text-gray-400 text-lg shadow transition-all duration-200" placeholder="Ví dụ: Mimikatz Credential Dumping Detected" />
-                  <div className="text-xs text-gray-400 mt-1">Tiêu đề ngắn gọn cho cảnh báo khi rule khớp.</div>
+                  <label className={`block text-base font-bold mb-2 ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>Tiêu đề Cảnh báo <span className="text-red-400">*</span></label>
+                  <input type="text" required value={createForm.AlertTitle} onChange={e => setCreateForm(f => ({...f, AlertTitle: e.target.value}))} className={`w-full px-5 py-4 rounded-xl text-lg shadow-sm transition-all duration-200 focus:ring-2 focus:ring-purple-500 focus:border-purple-400
+                    ${isDarkMode ? 'bg-white/20 border-2 border-purple-400 text-white placeholder:text-gray-400' : 'bg-white border border-gray-300 text-gray-800 font-semibold placeholder:text-gray-400'}`} placeholder="Ví dụ: Mimikatz Credential Dumping Detected" />
+                  <div className={`text-xs mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Tiêu đề ngắn gọn cho cảnh báo khi rule khớp.</div>
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-gray-200 mb-1">Mức độ (Severity) <span className="text-red-400">*</span></label>
+                  <label className={`block text-base font-bold mb-2 ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>Mức độ (Severity) <span className="text-red-400">*</span></label>
                   <Listbox value={createForm.AlertSeverity} onChange={val => setCreateForm(f => ({...f, AlertSeverity: val}))}>
                     {({ open }) => (
                       <div className="relative">
-                        <Listbox.Button className="w-full px-4 py-3 rounded-lg bg-white/20 border-2 border-purple-400 focus:border-blue-400 text-white text-base shadow flex justify-between items-center">
+                        <Listbox.Button className={`w-full px-4 py-3 rounded-lg text-base shadow flex justify-between items-center focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all duration-150
+                          ${isDarkMode ? 'bg-white/20 border-2 border-purple-400 text-white' : 'bg-white border-2 border-purple-400 text-gray-800 font-bold hover:bg-purple-50 hover:text-purple-700'}`}>
                           {severityOptions.find(o => o.value === createForm.AlertSeverity)?.label || 'Chọn mức độ'}
-                          <span className="ml-2">▼</span>
+                          <ChevronUpDownIcon className="w-5 h-5 ml-2" />
                         </Listbox.Button>
-                        {open && (
-                          <Listbox.Options className="absolute z-50 mt-1 w-full bg-slate-900 border border-purple-400 rounded-lg shadow-lg max-h-60 overflow-auto">
-                            {severityOptions.map(opt => (
-                              <Listbox.Option key={opt.value} value={opt.value} className={({ active, selected }) => `cursor-pointer select-none px-4 py-2 ${active ? 'bg-purple-700 text-white' : 'text-gray-100'} ${selected ? 'font-bold' : ''}` }>
-                                {opt.label}
-                              </Listbox.Option>
-                            ))}
-                          </Listbox.Options>
-                        )}
+                        <Listbox.Options className={`absolute z-50 mt-1 w-full rounded-xl shadow-2xl max-h-60 overflow-auto transition-all duration-150
+                          ${isDarkMode ? 'bg-black border border-purple-500' : 'bg-white border border-purple-400'}`}>
+                          {severityOptions.map(opt => (
+                            <Listbox.Option key={opt.value} value={opt.value} className={({ active, selected }) =>
+                              `cursor-pointer select-none px-4 py-2 transition-all duration-100
+                              ${isDarkMode ? (active ? 'bg-purple-700 text-white' : 'text-white') : (active ? 'bg-purple-50 text-purple-700' : 'bg-white text-gray-800')}
+                              ${selected ? (isDarkMode ? 'font-bold text-purple-300' : 'font-bold text-purple-700') : ''}`
+                            }>
+                              {opt.label}
+                            </Listbox.Option>
+                          ))}
+                        </Listbox.Options>
                       </div>
                     )}
                   </Listbox>
-                  <div className="text-xs text-gray-400 mt-1">Chọn mức độ nghiêm trọng cho cảnh báo.</div>
+                  <div className={`text-xs mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Chọn mức độ nghiêm trọng cho cảnh báo.</div>
                 </div>
                 <div className="mb-4">
-                  <label className="block text-sm font-bold text-gray-200 mb-2">Loại Cảnh báo (AlertType) <span className="text-red-400">*</span></label>
+                  <label className={`block text-base font-bold mb-2 ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>Loại Cảnh báo (AlertType) <span className="text-red-400">*</span></label>
                   <Listbox value={createForm.AlertType} onChange={val => setCreateForm(f => ({...f, AlertType: val}))}>
                     {({ open }) => (
                       <div className="relative">
-                        <Listbox.Button className="w-full px-4 py-3 rounded-lg bg-white/20 border-2 border-purple-400 text-white text-base shadow flex justify-between items-center focus:outline-none focus:ring-2 focus:ring-purple-500">
+                        <Listbox.Button className={`w-full px-4 py-3 rounded-lg text-base shadow flex justify-between items-center focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all duration-150
+                          ${isDarkMode ? 'bg-white/20 border-2 border-purple-400 text-white' : 'bg-white border-2 border-purple-400 text-gray-800 font-bold hover:bg-purple-50 hover:text-purple-700'}`}>
                           {createForm.AlertType || 'Chọn loại cảnh báo...'}
-                          <ChevronUpDownIcon className="w-5 h-5 ml-2 text-purple-200" />
+                          <ChevronUpDownIcon className="w-5 h-5 ml-2" />
                         </Listbox.Button>
-                        {open && (
-                          <Listbox.Options className="absolute z-50 mt-1 w-full bg-black border border-purple-500 rounded-xl shadow-2xl max-h-60 overflow-auto">
-                            {alertTypeOptions.map(opt => (
-                              <Listbox.Option key={opt} value={opt} className={({ active, selected }) => `cursor-pointer select-none px-4 py-2 ${active ? 'bg-purple-700 text-white' : 'text-white'} ${selected ? 'font-bold' : ''}` }>
-                                {({ selected }) => (
-                                  <div className="flex items-center gap-2">
-                                    {selected && <CheckIcon className="w-4 h-4 text-green-400" />}
-                                    {opt}
-                                  </div>
-                                )}
-                              </Listbox.Option>
-                            ))}
-                          </Listbox.Options>
-                        )}
+                        <Listbox.Options className={`absolute z-50 mt-1 w-full rounded-xl shadow-2xl max-h-60 overflow-auto transition-all duration-150
+                          ${isDarkMode ? 'bg-black border border-purple-500' : 'bg-white border border-purple-400'}`}>
+                          {alertTypeOptions.map(opt => (
+                            <Listbox.Option key={opt} value={opt} className={({ active, selected }) =>
+                              `cursor-pointer select-none px-4 py-2 transition-all duration-100
+                              ${isDarkMode ? (active ? 'bg-purple-700 text-white' : 'text-white') : (active ? 'bg-purple-50 text-purple-700' : 'bg-white text-gray-800')}
+                              ${selected ? (isDarkMode ? 'font-bold text-purple-300' : 'font-bold text-purple-700') : ''}`
+                            }>
+                              {({ selected }) => (
+                                <div className="flex items-center gap-2">
+                                  {selected && <CheckIcon className="w-4 h-4 text-green-400" />}
+                                  {opt}
+                                </div>
+                              )}
+                            </Listbox.Option>
+                          ))}
+                        </Listbox.Options>
                       </div>
                     )}
                   </Listbox>
                 </div>
                 <div className="mb-4">
-                  <label className="block text-sm font-bold text-gray-200 mb-2">MITRE Tactic <span className="text-red-400">*</span></label>
+                  <label className={`block text-base font-bold mb-2 ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>MITRE Tactic <span className="text-red-400">*</span></label>
                   <Listbox value={createForm.MitreTactic} onChange={val => setCreateForm(f => ({...f, MitreTactic: val}))}>
                     {({ open }) => (
                       <div className="relative">
-                        <Listbox.Button className="w-full px-4 py-3 rounded-xl bg-white/20 border-2 border-purple-400 text-white text-base shadow flex justify-between items-center focus:outline-none focus:ring-2 focus:ring-purple-500">
+                        <Listbox.Button className={`w-full px-4 py-3 rounded-lg text-base shadow flex justify-between items-center focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all duration-150
+                          ${isDarkMode ? 'bg-white/20 border-2 border-purple-400 text-white' : 'bg-white border-2 border-purple-400 text-gray-800 font-bold hover:bg-purple-50 hover:text-purple-700'}`}>
                           {createForm.MitreTactic || 'Chọn tactic...'}
-                          <ChevronUpDownIcon className="w-5 h-5 ml-2 text-purple-200" />
+                          <ChevronUpDownIcon className="w-5 h-5 ml-2" />
                         </Listbox.Button>
-                        {open && (
-                          <Listbox.Options className="absolute z-50 mt-1 w-full bg-black border border-purple-500 rounded-xl shadow-2xl max-h-60 overflow-auto">
-                            {mitreTacticOptions.map(opt => (
-                              <Listbox.Option key={opt} value={opt} className={({ active, selected }) => `cursor-pointer select-none px-4 py-2 ${active ? 'bg-purple-700 text-white' : 'text-white'} ${selected ? 'font-bold' : ''}` }>
-                                {({ selected }) => (
-                                  <div className="flex items-center gap-2">
-                                    {selected && <CheckIcon className="w-4 h-4 text-green-400" />}
-                                    {opt}
-                                  </div>
-                                )}
-                              </Listbox.Option>
-                            ))}
-                          </Listbox.Options>
-                        )}
+                        <Listbox.Options className={`absolute z-50 mt-1 w-full rounded-xl shadow-2xl max-h-60 overflow-auto transition-all duration-150
+                          ${isDarkMode ? 'bg-black border border-purple-500' : 'bg-white border border-purple-400'}`}>
+                          {mitreTacticOptions.map(opt => (
+                            <Listbox.Option key={opt} value={opt} className={({ active, selected }) =>
+                              `cursor-pointer select-none px-4 py-2 transition-all duration-100
+                              ${isDarkMode ? (active ? 'bg-purple-700 text-white' : 'text-white') : (active ? 'bg-purple-50 text-purple-700' : 'bg-white text-gray-800')}
+                              ${selected ? (isDarkMode ? 'font-bold text-purple-300' : 'font-bold text-purple-700') : ''}`
+                            }>
+                              {({ selected }) => (
+                                <div className="flex items-center gap-2">
+                                  {selected && <CheckIcon className="w-4 h-4 text-green-400" />}
+                                  {opt}
+                                </div>
+                              )}
+                            </Listbox.Option>
+                          ))}
+                        </Listbox.Options>
                       </div>
                     )}
                   </Listbox>
                 </div>
                 <div className="mb-4">
-                  <label className="block text-sm font-bold text-gray-200 mb-2">MITRE Technique <span className="text-red-400">*</span></label>
+                  <label className={`block text-base font-bold mb-2 ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>MITRE Technique <span className="text-red-400">*</span></label>
                   <div className="flex gap-2 items-center">
                     <div className="flex-1 min-w-0">
                       <Listbox value={isOtherMitreTechnique ? 'Khác' : createForm.MitreTechnique} onChange={val => {
@@ -1517,24 +1550,28 @@ const Rules = () => {
                       }}>
                         {({ open }) => (
                           <div className="relative">
-                            <Listbox.Button className="w-full px-4 py-3 rounded-xl bg-white/20 border-2 border-purple-400 text-white text-base shadow flex justify-between items-center focus:outline-none focus:ring-2 focus:ring-purple-500">
+                            <Listbox.Button className={`w-full px-4 py-3 rounded-lg text-base shadow flex justify-between items-center focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all duration-150
+                              ${isDarkMode ? 'bg-white/20 border-2 border-purple-400 text-white' : 'bg-white border-2 border-purple-400 text-gray-800 font-bold hover:bg-purple-50 hover:text-purple-700'}`}>
                               {isOtherMitreTechnique ? 'Khác' : (createForm.MitreTechnique || 'Chọn technique...')}
-                              <ChevronUpDownIcon className="w-5 h-5 ml-2 text-purple-200" />
+                              <ChevronUpDownIcon className="w-5 h-5 ml-2" />
                             </Listbox.Button>
-                            {open && (
-                              <Listbox.Options className="absolute z-50 mt-1 w-full bg-black border border-purple-500 rounded-xl shadow-2xl max-h-60 overflow-auto">
-                                {['Khác', ...uniqueMitreTechniqueOptions].map(opt => (
-                                  <Listbox.Option key={opt} value={opt} className={({ active, selected }) => `cursor-pointer select-none px-4 py-2 ${active ? 'bg-purple-700 text-white' : 'text-white'} ${selected ? 'font-bold' : ''}` }>
-                                    {({ selected }) => (
-                                      <div className="flex items-center gap-2">
-                                        {selected && <CheckIcon className="w-4 h-4 text-green-400" />}
-                                        {opt}
-                                      </div>
-                                    )}
-                                  </Listbox.Option>
-                                ))}
-                              </Listbox.Options>
-                            )}
+                            <Listbox.Options className={`absolute z-50 mt-1 w-full rounded-xl shadow-2xl max-h-60 overflow-auto transition-all duration-150
+                              ${isDarkMode ? 'bg-black border border-purple-500' : 'bg-white border border-purple-400'}`}>
+                              {['Khác', ...uniqueMitreTechniqueOptions].map(opt => (
+                                <Listbox.Option key={opt} value={opt} className={({ active, selected }) =>
+                                  `cursor-pointer select-none px-4 py-2 transition-all duration-100
+                                  ${isDarkMode ? (active ? 'bg-purple-700 text-white' : 'text-white') : (active ? 'bg-purple-50 text-purple-700' : 'bg-white text-gray-800')}
+                                  ${selected ? (isDarkMode ? 'font-bold text-purple-300' : 'font-bold text-purple-700') : ''}`
+                                }>
+                                  {({ selected }) => (
+                                    <div className="flex items-center gap-2">
+                                      {selected && <CheckIcon className="w-4 h-4 text-green-400" />}
+                                      {opt}
+                                    </div>
+                                  )}
+                                </Listbox.Option>
+                              ))}
+                            </Listbox.Options>
                           </div>
                         )}
                       </Listbox>
@@ -1553,28 +1590,36 @@ const Rules = () => {
                       />
                     )}
                   </div>
-                  <span className="text-xs text-purple-300 mt-1 block">Chọn từ danh sách hoặc chọn 'Khác' để nhập tự do.</span>
+                  <span className={`text-xs mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Chọn từ danh sách hoặc chọn 'Khác' để nhập tự do.</span>
                 </div>
+              </div>
+              <div className={`col-span-full md:col-span-2 rounded-2xl p-6 mt-8 mb-4 shadow-xl border transition-all duration-300
+                ${isDarkMode ? 'bg-gray-800 border-white/10 text-gray-100' : 'bg-gray-100 border border-gray-300 text-gray-800'}
+                w-full max-w-none min-w-0
+              `}>
+                <h3 className={`text-2xl mb-4 font-bold ${isDarkMode ? 'text-purple-300' : 'text-purple-600'}`}>Hướng dẫn tạo Rule phát hiện (Detection Rule)</h3>
+                <ul className="list-disc pl-6 space-y-2">
+                  <li><span className="font-bold">Tên Rule:</span> Đặt tên ngắn gọn, dễ hiểu, không trùng lặp.</li>
+                  <li><span className="font-bold">Loại Rule:</span> Chọn 1 trong các loại: <span className="font-bold">Behavioral</span> (hành vi), <span className="font-bold">Signature</span> (chữ ký), <span className="font-bold">Threshold</span> (ngưỡng), <span className="font-bold">Correlation</span> (liên kết sự kiện).</li>
+                  <li><span className="font-bold">Điều kiện Rule (JSON):</span> Mô tả điều kiện phát hiện, ví dụ:</li>
+                  <li>
+                    <pre className={`rounded-lg p-4 text-sm overflow-x-auto mt-2 mb-2 font-mono
+                      ${isDarkMode ? 'bg-slate-900 text-purple-100' : 'bg-gray-200 text-gray-900'}`}>{`{
+  "process_name": "powershell.exe",
+  "command_line_contains": ["-Enc", "-EncodedCommand"],
+  "logic": "AND"
+}`}</pre>
+                  </li>
+                  <li><span className="font-bold">Tiêu đề Cảnh báo:</span> Tiêu đề ngắn gọn cho cảnh báo khi rule khớp.</li>
+                  <li><span className="font-bold">Mức độ (Severity):</span> Chọn mức độ nghiêm trọng: <span className="font-bold">Critical</span>, <span className="font-bold">High</span>, <span className="font-bold">Medium</span>, <span className="font-bold">Low</span>.</li>
+                  <li><span className="font-bold">Loại Cảnh báo (AlertType):</span> Phân loại cảnh báo, ví dụ: <span className="font-bold">Credential Access</span>, <span className="font-bold">Execution</span>, <span className="font-bold">Persistence</span>, ...</li>
+                  <li><span className="font-bold">Nền tảng (Platform):</span> Chọn <span className="font-bold">Windows</span>, <span className="font-bold">Linux</span> hoặc <span className="font-bold">All</span>.</li>
+                  <li><span className="font-bold">MITRE Tactic/Technique:</span> (Không bắt buộc) – Tham khảo <a href="https://attack.mitre.org/" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">MITRE ATT&CK</a> để điền đúng tactic/technique.</li>
+                </ul>
               </div>
               <div className="md:col-span-2 flex flex-col gap-2 mt-2">
                 {createError && <div className="text-red-400 font-medium">{createError}</div>}
                 <button type="submit" disabled={createLoading || !ruleConditionValid} className="w-full py-3 rounded-lg bg-blue-600 text-white font-bold text-lg hover:bg-blue-700 transition-colors disabled:opacity-50 shadow-lg">{createLoading ? 'Đang tạo...' : 'Tạo Rule'}</button>
-              </div>
-              <div className="md:col-span-2 mt-8 bg-black/40 rounded-xl p-4 border border-white/10">
-                <h3 className="text-lg font-bold text-purple-300 mb-2">Hướng dẫn tạo Rule phát hiện (Detection Rule)</h3>
-                <ul className="list-disc pl-6 text-sm text-gray-200 space-y-1">
-                  <li><b>Tên Rule</b>: Đặt tên ngắn gọn, dễ hiểu, không trùng lặp.</li>
-                  <li><b>Loại Rule</b>: Chọn 1 trong các loại: <b>Behavioral</b> (hành vi), <b>Signature</b> (chữ ký), <b>Threshold</b> (ngưỡng), <b>Correlation</b> (liên kết sự kiện).</li>
-                  <li><b>Điều kiện Rule (JSON)</b>: Mô tả điều kiện phát hiện, ví dụ:
-                    <pre className="bg-slate-800 text-purple-200 rounded p-2 mt-1 text-xs whitespace-pre-wrap">{ruleTypeSamples[createForm.RuleType]}</pre>
-                    <span className="text-gray-400">Các trường phổ biến: <b>process_name</b>, <b>command_line_contains</b>, <b>file_extensions</b>, <b>file_operation</b>, <b>registry_key_contains</b>, <b>threshold</b>, <b>logic</b> (AND/OR), ...</span>
-                  </li>
-                  <li><b>Tiêu đề Cảnh báo</b>: Tiêu đề ngắn gọn cho cảnh báo khi rule khớp.</li>
-                  <li><b>Mức độ (Severity)</b>: Chọn mức độ nghiêm trọng: <b>Critical</b>, <b>High</b>, <b>Medium</b>, <b>Low</b>.</li>
-                  <li><b>Loại Cảnh báo (AlertType)</b>: Phân loại cảnh báo, ví dụ: <b>Credential Access</b>, <b>Execution</b>, <b>Persistence</b>, ...</li>
-                  <li><b>Nền tảng (Platform)</b>: Chọn <b>Windows</b>, <b>Linux</b> hoặc <b>All</b>.</li>
-                  <li><b>MITRE Tactic/Technique</b>: (Không bắt buộc) - Tham khảo <a href="https://attack.mitre.org/" target="_blank" className="underline text-blue-300">MITRE ATT&CK</a> để điền đúng tactic/technique.</li>
-                </ul>
               </div>
             </form>
           </div>

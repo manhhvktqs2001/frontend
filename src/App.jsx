@@ -11,7 +11,6 @@ import Rules from './components/page/Rules';
 import Threats from './components/page/Threats';
 import Settings from './components/page/Settings';
 import ThreatHunt from './components/page/ThreatHunt';
-import NetworkMonitoring from './components/page/NetworkMonitoring';
 import ToastContainer from './components/common/ToastContainer';
 import './index.css';
 
@@ -42,7 +41,6 @@ const App = () => {
               <Route path="/threats" element={<Threats />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/threat-hunt" element={<ThreatHunt />} />
-              <Route path="/network" element={<NetworkMonitoring />} />
             </Routes>
           </main>
         </div>

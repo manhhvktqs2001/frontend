@@ -152,14 +152,6 @@ const Sidebar = ({ currentPath = '/', user = { role: 'admin' } }) => {
           description: 'Proactive threat hunting'
         },
         {
-          label: 'Network',
-          icon: GlobeAltIcon,
-          to: '/network',
-          badge: null,
-          roles: ['admin', 'analyst'],
-          description: 'Network traffic analysis'
-        },
-        {
           label: 'Settings',
           icon: Cog6ToothIcon,
           to: '/settings',
@@ -243,7 +235,6 @@ const Sidebar = ({ currentPath = '/', user = { role: 'admin' } }) => {
                   case 'Rules': iconColor = 'text-yellow-500'; break;
                   case 'Threats': iconColor = 'text-orange-500'; break;
                   case 'Threat Hunt': iconColor = 'text-pink-500'; break;
-                  case 'Network': iconColor = 'text-sky-500'; break;
                   case 'Settings': iconColor = 'text-gray-500'; break;
                   default: iconColor = 'text-gray-400 dark:text-gray-400';
                 }
