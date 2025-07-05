@@ -24,17 +24,31 @@ import {
   WifiIcon
 } from '@heroicons/react/24/outline';
 import { Doughnut, Line, Bar, Pie } from 'react-chartjs-2';
-import { Chart, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement, BarElement } from 'chart.js';
+import { Chart, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement, BarElement, Filler } from 'chart.js';
 import { 
   fetchDashboardStats, 
   fetchAlerts, 
   fetchThreats, 
-  fetchEventsTimeline 
+  fetchEventsTimeline,
+  fetchRealTimeStats,
+  fetchAlertStats
 } from '../../service/api';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../../contexts/ThemeContext';
 
-Chart.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement, BarElement);
+Chart.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement, BarElement, Filler);
+
+function formatTime(date, timeFormat) {
+  if (timeFormat === 'vn') {
+    // Giờ Việt Nam (GMT+7, 24h)
+    const utc = date.getTime() + (date.getTimezoneOffset() * 60000);
+    const vnDate = new Date(utc + 7 * 60 * 60 * 1000);
+    return vnDate.toLocaleTimeString('vi-VN', { hour12: false });
+  } else {
+    // AM/PM theo giờ hệ thống
+    return date.toLocaleTimeString('en-US', { hour12: true });
+  }
+}
 
 const Dashboard = () => {
   const { isDarkMode, isTransitioning } = useTheme();
@@ -46,6 +60,9 @@ const Dashboard = () => {
   const [error, setError] = useState(null);
   const [selectedTimeframe, setSelectedTimeframe] = useState('Last 7 days');
   const [lastUpdated, setLastUpdated] = useState(new Date());
+  const [realTimeStats, setRealTimeStats] = useState(null);
+  const [timeFormat, setTimeFormat] = useState('vn');
+  const [alertStats, setAlertStats] = useState(null);
   const navigate = useNavigate();
 
   // Fetch dashboard data from API
@@ -72,15 +89,34 @@ const Dashboard = () => {
     }
   };
 
+  const fetchAndSetRealTimeStats = async () => {
+    try {
+      const stats = await fetchRealTimeStats();
+      setRealTimeStats(stats);
+    } catch (err) {
+      // Optionally handle error
+    }
+  };
+
   useEffect(() => {
     fetchDashboardData();
-    
-    // Auto refresh every 30 seconds
+    fetchAlertStats({ hours: 24 }).then(data => setAlertStats(data));
     const interval = setInterval(() => {
       fetchDashboardData();
-    }, 30000);
-
+      fetchAlertStats({ hours: 24 }).then(data => setAlertStats(data));
+    }, 10000);
     return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    // Ưu tiên lấy từ localStorage nếu không truyền prop
+    const saved = localStorage.getItem('generalSettings');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed.timeFormat) setTimeFormat(parsed.timeFormat);
+      } catch {}
+    }
   }, []);
 
   // Manual refresh function
@@ -119,31 +155,52 @@ const Dashboard = () => {
     }]
   } : null;
 
+  console.log('DEBUG: timeline', timeline);
+  console.log('DEBUG: timeline[0]', timeline?.timeline?.[0]);
+
+  // Tổng hợp count theo event_type
+  const eventTypeCounts = {};
+  (timeline?.timeline || []).forEach(item => {
+    if (!eventTypeCounts[item.event_type]) {
+      eventTypeCounts[item.event_type] = 0;
+    }
+    eventTypeCounts[item.event_type] += item.count;
+  });
+  const labels = Object.keys(eventTypeCounts);
+  const events = Object.values(eventTypeCounts);
+
+  console.log('DEBUG: events array', events);
+
+  const eventTypeColors = {
+    Authentication: '#6366f1', // Indigo
+    Process: '#3b82f6',       // Blue
+    File: '#10b981',          // Emerald
+    Registry: '#a21caf',      // Purple
+    Network: '#f59e0b'        // Amber
+  };
+  const backgroundTypeColors = {
+    Authentication: 'rgba(99, 102, 241, 0.2)',
+    Process: 'rgba(59, 130, 246, 0.2)',
+    File: 'rgba(16, 185, 129, 0.2)',
+    Registry: 'rgba(162, 28, 175, 0.2)',
+    Network: 'rgba(245, 158, 11, 0.2)'
+  };
+
+  const borderColors = labels.map(label => eventTypeColors[label] || '#64748b');
+  const backgroundColors = labels.map(label => backgroundTypeColors[label] || 'rgba(100, 116, 139, 0.2)');
+
   const threatTrendData = timeline ? {
-    labels: timeline.labels || [],
+    labels,
     datasets: [
       {
-        label: 'Threats Detected',
-        data: timeline.threats || [],
-        borderColor: '#ef4444',
-        backgroundColor: isDarkMode ? 'rgba(239, 68, 68, 0.2)' : 'rgba(239, 68, 68, 0.1)',
-        borderWidth: 3,
-        fill: true,
-        tension: 0.4,
-        pointBackgroundColor: '#ef4444',
-        pointBorderColor: isDarkMode ? '#1e293b' : '#ffffff',
-        pointBorderWidth: 2,
-        pointRadius: 6
-      },
-      {
         label: 'Events',
-        data: timeline.events || [],
-        borderColor: '#3b82f6',
-        backgroundColor: isDarkMode ? 'rgba(59, 130, 246, 0.2)' : 'rgba(59, 130, 246, 0.1)',
+        data: events,
+        borderColor: borderColors,
+        backgroundColor: backgroundColors,
         borderWidth: 3,
         fill: true,
         tension: 0.4,
-        pointBackgroundColor: '#3b82f6',
+        pointBackgroundColor: borderColors,
         pointBorderColor: isDarkMode ? '#1e293b' : '#ffffff',
         pointBorderWidth: 2,
         pointRadius: 6
@@ -151,15 +208,19 @@ const Dashboard = () => {
     ]
   } : null;
 
-  const alertsBarData = stats ? {
+  const severityDist = alertStats?.severity_breakdown || {};
+  const getSeverityCount = (key) => {
+    return severityDist[key] || severityDist[key.toLowerCase()] || 0;
+  };
+  const alertsBarData = {
     labels: ['Critical', 'High', 'Medium', 'Low'],
     datasets: [{
       label: 'Alerts by Severity',
       data: [
-        stats.alerts?.critical || 0,
-        stats.alerts?.high || 0,
-        stats.alerts?.medium || 0,
-        stats.alerts?.low || 0
+        getSeverityCount('Critical'),
+        getSeverityCount('High'),
+        getSeverityCount('Medium'),
+        getSeverityCount('Low')
       ],
       backgroundColor: [
         '#dc2626', // Red-600
@@ -170,10 +231,9 @@ const Dashboard = () => {
       borderRadius: 8,
       borderSkipped: false,
     }]
-  } : null;
+  };
 
   // Event Type Breakdown
-  const eventTypeCounts = timeline?.events_by_type;
   const eventTypeChartData = eventTypeCounts ? {
     labels: Object.keys(eventTypeCounts),
     datasets: [{
@@ -413,7 +473,7 @@ const Dashboard = () => {
             ${isDarkMode ? 'text-gray-200' : 'text-gray-600'}
           `}>
             <ClockIcon className="w-4 h-4" />
-            <span>Last updated: {lastUpdated.toLocaleTimeString()}</span>
+            <span>Last updated: {formatTime(lastUpdated, timeFormat)}</span>
           </div>
         </div>
       </div>
@@ -469,7 +529,7 @@ const Dashboard = () => {
               </span>
             </div>
             <div className="text-4xl font-bold text-white drop-shadow-lg">
-              {stats?.agents?.online || 0}
+              {stats?.agents?.online ?? 0}
             </div>
           </div>
 
@@ -495,7 +555,7 @@ const Dashboard = () => {
               </span>
             </div>
             <div className="text-4xl font-bold text-white drop-shadow-lg">
-              {stats?.alerts?.critical || 0}
+              {stats?.alerts?.open || 0}
             </div>
           </div>
 
@@ -586,7 +646,7 @@ const Dashboard = () => {
                 text-lg font-bold transition-colors duration-300
                 ${isDarkMode ? 'text-white' : 'text-gray-900'}
               `}>
-                Security Events Timeline
+                Events by Type
               </h3>
               <ChartBarIcon className={`
                 w-6 h-6 transition-colors duration-300
@@ -678,366 +738,9 @@ const Dashboard = () => {
             </div>
           </div>
         </div>
-
-        {/* Recent Activity Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-          {/* Recent Critical Alerts */}
-          {alertsOverview?.recent_critical_alerts?.length > 0 && (
-            <div className={`
-              rounded-2xl shadow-2xl p-6 border transition-all duration-300
-              ${isDarkMode 
-                ? 'bg-gradient-to-br from-red-700/80 to-pink-900/80 border-red-700/30' 
-                : 'bg-gradient-to-br from-red-50/80 to-pink-50/80 border-red-200/50'
-              }
-            `}>
-              <div className="flex items-center justify-between mb-4">
-                <h3 className={`
-                  text-lg font-bold tracking-tight flex items-center gap-2 transition-colors duration-300
-                  ${isDarkMode ? 'text-white' : 'text-red-900'}
-                `}>
-                  <ExclamationTriangleIcon className={`
-                    w-7 h-7 transition-colors duration-300
-                    ${isDarkMode ? 'text-red-300' : 'text-red-600'}
-                  `} />
-                  Recent Critical Alerts
-                </h3>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                  <span className={`
-                    text-xs font-medium transition-colors duration-300
-                    ${isDarkMode ? 'text-red-200' : 'text-red-700'}
-                  `}>
-                    Live
-                  </span>
                 </div>
               </div>
-              <div className="space-y-3 max-h-72 overflow-y-auto">
-                {alertsOverview.recent_critical_alerts.slice(0, 5).map((alert, index) => (
-                  <div key={alert.alert_id || index} className={`
-                    p-4 rounded-xl border transition-all duration-200 hover:shadow-md
-                    ${isDarkMode 
-                      ? 'bg-gradient-to-r from-red-900/60 to-pink-900/40 border-red-900/30' 
-                      : 'bg-gradient-to-r from-red-100/60 to-pink-100/40 border-red-200/50'
-                    }
-                  `}>
-                    <div className="flex items-start gap-3">
-                      <div className={`
-                        p-2 rounded-lg transition-colors duration-300
-                        ${isDarkMode ? 'bg-red-600' : 'bg-red-500'}
-                      `}>
-                        <ExclamationTriangleIcon className="w-5 h-5 text-white" />
-                      </div>
-                      <div className="flex-1">
-                        <h4 className={`
-                          font-semibold text-base transition-colors duration-300
-                          ${isDarkMode ? 'text-white' : 'text-red-900'}
-                        `}>
-                          {alert.title}
-                        </h4>
-                        <p className={`
-                          text-xs mt-1 transition-colors duration-300
-                          ${isDarkMode ? 'text-gray-300' : 'text-red-700'}
-                        `}>
-                          Agent: {alert.agent_id}
-                        </p>
-                        <div className="flex items-center gap-2 mt-2">
-                          <span className={`
-                            px-2 py-1 rounded-full text-xs font-medium transition-colors duration-300
-                            ${isDarkMode ? 'bg-red-800/60 text-red-200' : 'bg-red-200 text-red-800'}
-                          `}>
-                            {alert.severity}
-                          </span>
-                          <span className={`
-                            text-xs transition-colors duration-300
-                            ${isDarkMode ? 'text-gray-400' : 'text-red-600'}
-                          `}>
-                            {new Date(alert.first_detected).toLocaleTimeString()}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Recent Threat Detections */}
-          {threatsOverview?.recent_detections?.length > 0 && (
-            <div className={`
-              rounded-2xl shadow-xl p-6 border transition-all duration-300
-              ${isDarkMode 
-                ? 'bg-white/10 border-white/10' 
-                : 'bg-white/80 border-white/20'
-              }
-            `}>
-              <div className="flex items-center justify-between mb-4">
-                <h3 className={`
-                  text-lg font-bold transition-colors duration-300
-                  ${isDarkMode ? 'text-white' : 'text-gray-900'}
-                `}>
-                  Recent Threat Detections
-                </h3>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
-                  <span className={`
-                    text-xs font-medium transition-colors duration-300
-                    ${isDarkMode ? 'text-orange-200' : 'text-orange-700'}
-                  `}>
-                    Active
-                  </span>
-                </div>
-              </div>
-              <div className="space-y-3 max-h-72 overflow-y-auto">
-                {threatsOverview.recent_detections.slice(0, 5).map((threat, index) => (
-                  <div key={threat.threat_id || index} className={`
-                    p-4 rounded-xl border hover:shadow-md transition-all duration-200
-                    ${isDarkMode 
-                      ? 'bg-gradient-to-r from-orange-900/60 to-yellow-900/40 border-orange-900/30' 
-                      : 'bg-gradient-to-r from-orange-100/60 to-yellow-100/40 border-orange-200/50'
-                    }
-                  `}>
-                    <div className="flex items-start gap-3">
-                      <div className={`
-                        p-2 rounded-lg transition-colors duration-300
-                        ${isDarkMode ? 'bg-orange-600' : 'bg-orange-500'}
-                      `}>
-                        <FireIcon className="w-4 h-4 text-white" />
-                      </div>
-                      <div className="flex-1">
-                        <h4 className={`
-                          font-semibold text-sm transition-colors duration-300
-                          ${isDarkMode ? 'text-white' : 'text-orange-900'}
-                        `}>
-                          {threat.threat_name}
-                        </h4>
-                        <p className={`
-                          text-xs mt-1 transition-colors duration-300
-                          ${isDarkMode ? 'text-gray-300' : 'text-orange-700'}
-                        `}>
-                          Category: {threat.threat_category}
-                        </p>
-                        <div className="flex items-center gap-2 mt-2">
-                          <span className={`
-                            px-2 py-1 rounded-full text-xs font-medium transition-colors duration-300
-                            ${isDarkMode ? 'bg-orange-800/60 text-orange-200' : 'bg-orange-200 text-orange-800'}
-                          `}>
-                            {threat.detection_count} detections
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* System Status Footer */}
-        <div className="px-8 pb-8">
-          <div className={`
-            rounded-2xl shadow-xl p-6 border grid grid-cols-2 md:grid-cols-6 gap-6 transition-all duration-300
-            ${isDarkMode 
-              ? 'bg-white/10 border-white/10' 
-              : 'bg-white/80 border-white/20'
-            }
-          `}>
-            <div className="text-center">
-              <div className={`
-                p-4 rounded-xl mb-3 transition-colors duration-300
-                ${isDarkMode ? 'bg-blue-900/60' : 'bg-blue-100'}
-              `}>
-                <UserGroupIcon className={`
-                  w-8 h-8 mx-auto transition-colors duration-300
-                  ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}
-                `} />
-              </div>
-              <div className={`
-                text-2xl font-bold transition-colors duration-300
-                ${isDarkMode ? 'text-blue-200' : 'text-blue-600'}
-              `}>
-                {stats?.agents?.total || 0}
-              </div>
-              <div className={`
-                text-xs font-medium transition-colors duration-300
-                ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}
-              `}>
-                Total Agents
-              </div>
-            </div>
-            
-            <div className="text-center">
-              <div className={`
-                p-4 rounded-xl mb-3 transition-colors duration-300
-                ${isDarkMode ? 'bg-green-900/60' : 'bg-green-100'}
-              `}>
-                <CheckCircleIcon className={`
-                  w-8 h-8 mx-auto transition-colors duration-300
-                  ${isDarkMode ? 'text-green-400' : 'text-green-600'}
-                `} />
-              </div>
-              <div className={`
-                text-2xl font-bold transition-colors duration-300
-                ${isDarkMode ? 'text-green-200' : 'text-green-600'}
-              `}>
-                {stats?.agents?.online || 0}
-              </div>
-              <div className={`
-                text-xs font-medium transition-colors duration-300
-                ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}
-              `}>
-                Online
-              </div>
-            </div>
-            
-            <div className="text-center">
-              <div className={`
-                p-4 rounded-xl mb-3 transition-colors duration-300
-                ${isDarkMode ? 'bg-red-900/60' : 'bg-red-100'}
-              `}>
-                <XCircleIcon className={`
-                  w-8 h-8 mx-auto transition-colors duration-300
-                  ${isDarkMode ? 'text-red-400' : 'text-red-600'}
-                `} />
-              </div>
-              <div className={`
-                text-2xl font-bold transition-colors duration-300
-                ${isDarkMode ? 'text-red-200' : 'text-red-600'}
-              `}>
-                {stats?.alerts?.open || 0}
-              </div>
-              <div className={`
-                text-xs font-medium transition-colors duration-300
-                ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}
-              `}>
-                Open Alerts
-              </div>
-            </div>
-            
-            <div className="text-center">
-              <div className={`
-                p-4 rounded-xl mb-3 transition-colors duration-300
-                ${isDarkMode ? 'bg-yellow-900/60' : 'bg-yellow-100'}
-              `}>
-                <BoltIcon className={`
-                  w-8 h-8 mx-auto transition-colors duration-300
-                  ${isDarkMode ? 'text-yellow-400' : 'text-yellow-600'}
-                `} />
-              </div>
-              <div className={`
-                text-2xl font-bold transition-colors duration-300
-                ${isDarkMode ? 'text-yellow-200' : 'text-yellow-600'}
-              `}>
-                {stats?.detection?.active_rules || 0}
-              </div>
-              <div className={`
-                text-xs font-medium transition-colors duration-300
-                ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}
-              `}>
-                Active Rules
-              </div>
-            </div>
-            
-            <div className="text-center">
-              <div className={`
-                p-4 rounded-xl mb-3 transition-colors duration-300
-                ${isDarkMode ? 'bg-purple-900/60' : 'bg-purple-100'}
-              `}>
-                <ShieldCheckIcon className={`
-                  w-8 h-8 mx-auto transition-colors duration-300
-                  ${isDarkMode ? 'text-purple-400' : 'text-purple-600'}
-                `} />
-              </div>
-              <div className={`
-                text-2xl font-bold transition-colors duration-300
-                ${isDarkMode ? 'text-purple-200' : 'text-purple-600'}
-              `}>
-                {stats?.threats?.active_indicators || 0}
-              </div>
-              <div className={`
-                text-xs font-medium transition-colors duration-300
-                ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}
-              `}>
-                Threat Indicators
-              </div>
-            </div>
-            
-            <div className="text-center">
-              <div className={`
-                p-4 rounded-xl mb-3 transition-colors duration-300
-                ${isDarkMode ? 'bg-pink-900/60' : 'bg-pink-100'}
-              `}>
-                <HeartIcon className={`
-                  w-8 h-8 mx-auto transition-colors duration-300
-                  ${isDarkMode ? 'text-pink-400' : 'text-pink-600'}
-                `} />
-              </div>
-              <div className={`
-                text-2xl font-bold transition-colors duration-300
-                ${isDarkMode ? 'text-pink-200' : 'text-pink-600'}
-              `}>
-                {stats?.system_health?.score || 0}%
-              </div>
-              <div className={`
-                text-xs font-medium transition-colors duration-300
-                ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}
-              `}>
-                Health Score
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Alert Banner for Offline Agents */}
-        {stats?.agents?.offline > 0 && (
-          <div className={`
-            mx-8 mt-6 border-l-4 p-6 rounded-xl shadow-lg transition-all duration-300
-            ${isDarkMode 
-              ? 'bg-gradient-to-r from-red-900/60 to-pink-900/40 border-red-600' 
-              : 'bg-gradient-to-r from-red-50 to-pink-50 border-red-500'
-            }
-          `}>
-            <div className="flex items-center">
-              <div className={`
-                p-2 rounded-lg mr-4 transition-colors duration-300
-                ${isDarkMode ? 'bg-red-600' : 'bg-red-500'}
-              `}>
-                <ExclamationTriangleIcon className="w-6 h-6 text-white" />
-              </div>
-              <div className="flex-1">
-                <h4 className={`
-                  text-lg font-semibold transition-colors duration-300
-                  ${isDarkMode ? 'text-red-200' : 'text-red-800'}
-                `}>
-                  System Alert: Offline Agents Detected
-                </h4>
-                <p className={`
-                  mt-1 transition-colors duration-300
-                  ${isDarkMode ? 'text-red-300' : 'text-red-700'}
-                `}>
-                  <strong>{stats.agents.offline}</strong> computers are currently offline and not being managed by the EDR System. 
-                  Immediate attention may be required to ensure full security coverage.
-                </p>
-              </div>
-              <button
-                className={`
-                  px-6 py-3 rounded-lg font-medium transition-all duration-200 hover:scale-105
-                  ${isDarkMode 
-                    ? 'bg-red-600 text-white hover:bg-red-700' 
-                    : 'bg-red-600 text-white hover:bg-red-700'
-                  }
-                `}
-                onClick={() => navigate('/agents?status=offline')}
-              >
-                View Details
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
   );
-};
+}
 
 export default Dashboard;

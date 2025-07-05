@@ -8,12 +8,14 @@ const ToastContainer = ({ position = 'top-right', maxToasts = 5 }) => {
   if (toasts.length === 0) return null;
 
   return (
-    <ToastNotificationContainer
-      toasts={toasts}
-      onRemoveToast={removeToast}
-      position={position}
-      maxToasts={maxToasts}
-    />
+    <div className="toast-container fixed top-16 right-6 z-50 flex flex-col items-end gap-2">
+      <ToastNotificationContainer
+        toasts={toasts}
+        onRemoveToast={removeToast}
+        position={position}
+        maxToasts={maxToasts}
+      />
+    </div>
   );
 };
 

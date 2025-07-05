@@ -10,6 +10,9 @@ import {
   EyeSlashIcon
 } from '@heroicons/react/24/outline';
 import { useTheme } from '../../contexts/ThemeContext';
+import GeneralSettings from './GeneralSettings';
+import ActionSettings from './ActionSettings';
+import Select from 'react-select';
 
 const Settings = () => {
   const { isDarkMode, isTransitioning } = useTheme();
@@ -17,48 +20,182 @@ const Settings = () => {
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [pendingSection, setPendingSection] = useState(null);
+  const [globalActionMode, setGlobalActionMode] = useState('alert_and_action');
   
   // Form states
-  const [generalSettings, setGeneralSettings] = useState({
+  const [defaultGeneralSettings, setDefaultGeneralSettings] = useState({
     systemName: 'EDR Security System',
-    timezone: 'UTC',
-    language: 'en',
-    autoRefresh: true,
-    refreshInterval: 30
+    timeFormat: 'vn',
   });
-  
-  const [securitySettings, setSecuritySettings] = useState({
-    sessionTimeout: 30,
-    requireMFA: false,
-    passwordPolicy: 'strong',
-    encryptionLevel: 'high',
-    auditLogging: true
+  const [generalSettings, setGeneralSettings] = useState(defaultGeneralSettings);
+
+  const [actionSettings, setActionSettings] = useState({
+    killProcess: {
+      enabled: true,
+      requiresApproval: false,
+      severityLevel: 'high',
+      riskThreshold: 80,
+      notifyAdmin: true,
+      notifyUser: false,
+      parameters: {
+        forceKill: true,
+        timeoutSeconds: 30
+      }
+    },
+    isolateHost: {
+      enabled: true,
+      requiresApproval: true,
+      severityLevel: 'critical',
+      riskThreshold: 90,
+      notifyAdmin: true,
+      notifyUser: true,
+      parameters: {
+        blockAllConnections: true,
+        allowAdminAccess: true,
+        isolationDurationHours: 24
+      }
+    },
+    quarantineFile: {
+      enabled: true,
+      requiresApproval: false,
+      severityLevel: 'medium',
+      riskThreshold: 60,
+      notifyAdmin: true,
+      notifyUser: false,
+      parameters: {
+        quarantineLocation: '/var/quarantine',
+        backupOriginal: true,
+        scanQuarantined: true
+      }
+    },
+    blockIP: {
+      enabled: true,
+      requiresApproval: false,
+      severityLevel: 'high',
+      riskThreshold: 75,
+      notifyAdmin: true,
+      notifyUser: false,
+      parameters: {
+        blockDurationHours: 24,
+        blockDirection: 'both',
+        firewallRuleName: 'edr_blocked_ip'
+      }
+    },
+    disableUser: {
+      enabled: true,
+      requiresApproval: true,
+      severityLevel: 'critical',
+      riskThreshold: 85,
+      notifyAdmin: true,
+      notifyUser: true,
+      parameters: {
+        disableDurationHours: 24,
+        forceLogout: true,
+        preventLogin: true
+      }
+    },
+    restartService: {
+      enabled: false,
+      requiresApproval: true,
+      severityLevel: 'medium',
+      riskThreshold: 70,
+      notifyAdmin: true,
+      notifyUser: false,
+      parameters: {
+        serviceName: '',
+        restartDelaySeconds: 5,
+        maxRestartAttempts: 3
+      }
+    }
   });
-  
-  const [notificationSettings, setNotificationSettings] = useState({
-    emailAlerts: true,
-    smsAlerts: false,
-    webhookAlerts: false,
-    alertLevel: 'high',
-    quietHours: false,
-    quietStart: '22:00',
-    quietEnd: '08:00'
-  });
-  
-  const [integrationSettings, setIntegrationSettings] = useState({
-    apiEnabled: true,
-    apiKey: 'sk-••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••',
-    webhookUrl: '',
-    slackIntegration: false,
-    teamsIntegration: false,
-    emailIntegration: true
-  });
+
+  // Thêm các constant cho event types, action types, severity levels
+  const EVENT_TYPES = [
+    { key: 'Process', label: 'Process' },
+    { key: 'Network', label: 'Network' },
+    { key: 'File', label: 'File' }
+  ];
+  const ACTION_TYPES = {
+    Process: [
+      { key: 'kill_process', label: 'Kill Process' }
+    ],
+    Network: [
+      { key: 'block_network', label: 'Block Network' }
+    ],
+    File: [
+      { key: 'quarantine_file', label: 'Quarantine File' }
+    ]
+  };
+  const SEVERITY_OPTIONS = [
+    { value: 'Low', label: 'Low', color: '#22c55e' },
+    { value: 'Medium', label: 'Medium', color: '#eab308' },
+    { value: 'High', label: 'High', color: '#f97316' },
+    { value: 'Critical', label: 'Critical', color: '#ef4444' }
+  ];
+
+  // State cho cấu hình actions theo event type
+  const [eventActions, setEventActions] = useState(() =>
+    EVENT_TYPES.map(evt => ({
+      event_type: evt.key,
+      enabled: false,
+      action: ACTION_TYPES[evt.key][0].key,
+      severity: ['High', 'Critical'],
+      config: {}
+    }))
+  );
+
+  const AGENT_ID = localStorage.getItem('agent_id') || 'demo-agent-001'; // Thay bằng agent_id thực tế nếu có
 
   const handleSave = async (section) => {
     setLoading(true);
     try {
+      let endpoint = '';
+      let data = {};
+      switch (section) {
+        case 'general':
+          endpoint = '/api/v1/settings/general';
+          data = { ...generalSettings };
+          break;
+        case 'actions':
+          endpoint = '/api/v1/actions';
+          let saveEventActions;
+          if (globalActionMode === 'alert_only') {
+            // Nếu chỉ gửi cảnh báo, reset eventActions về mặc định
+            saveEventActions = EVENT_TYPES.map(evt => ({
+              event_type: evt.key,
+              enabled: false,
+              action: ACTION_TYPES[evt.key][0].key,
+              severity: ['High', 'Critical'],
+              config: {}
+            }));
+          } else {
+            // Nếu là alert_and_action, gửi đầy đủ eventActions theo lựa chọn
+            saveEventActions = eventActions;
+          }
+          data = { globalActionMode, eventActions: saveEventActions };
+          console.log('Dữ liệu gửi lên server:', data);
+          localStorage.setItem('actionSettingsV2', JSON.stringify(data));
+          await fetch(`/api/v1/agents/${AGENT_ID}/action-settings`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+          });
+          break;
+        default:
+          endpoint = '/api/v1/settings';
+          data = { generalSettings, globalActionMode, eventActions };
+      }
+      
       // Simulate API call
+      console.log(`Saving ${section} settings:`, data);
       await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Lưu generalSettings vào localStorage nếu là tab General
+      if (section === 'general') {
+        localStorage.setItem('generalSettings', JSON.stringify(generalSettings));
+      }
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (error) {
@@ -68,12 +205,143 @@ const Settings = () => {
     }
   };
 
+  const handleSaveClick = (section) => {
+    setPendingSection(section);
+    setShowConfirm(true);
+  };
+
+  const handleConfirmYes = () => {
+    setShowConfirm(false);
+    if (pendingSection) handleSave(pendingSection);
+    setPendingSection(null);
+  };
+
+  const handleConfirmNo = () => {
+    setShowConfirm(false);
+    setPendingSection(null);
+  };
+
+  const handleEventActionChange = (idx, field, value) => {
+    setEventActions(prev => prev.map((item, i) =>
+      i === idx ? { ...item, [field]: value } : item
+    ));
+  };
+  const handleSeverityChange = (idx, value) => {
+    setEventActions(prev => prev.map((item, i) =>
+      i === idx ? { ...item, severity: value } : item
+    ));
+  };
+  const handleConfigChange = (idx, key, value) => {
+    setEventActions(prev => prev.map((item, i) =>
+      i === idx ? { ...item, config: { ...item.config, [key]: value } } : item
+    ));
+  };
+
   const tabs = [
     { id: 'general', name: 'General', icon: Cog6ToothIcon },
-    { id: 'security', name: 'Security', icon: ShieldCheckIcon },
-    { id: 'notifications', name: 'Notifications', icon: BellIcon },
-    { id: 'integrations', name: 'Integrations', icon: GlobeAltIcon }
+    { id: 'actions', name: 'Actions', icon: ShieldCheckIcon }
   ];
+
+  useEffect(() => {
+    if (generalSettings && generalSettings.systemName) {
+      document.title = generalSettings.systemName;
+    } else {
+      document.title = 'EDR System Dashboard';
+    }
+  }, [generalSettings.systemName]);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('generalSettings');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (!parsed.systemName) parsed.systemName = 'EDR Security System';
+        delete parsed.autoRefresh;
+        delete parsed.refreshInterval;
+        setDefaultGeneralSettings(parsed);
+        setGeneralSettings(parsed);
+        if (parsed.eventActions) setEventActions(Array.isArray(parsed.eventActions) ? parsed.eventActions : []);
+        return;
+      } catch {}
+    }
+    async function fetchDefaultSettings() {
+      try {
+        const res = await fetch('/api/v1/settings/general/default');
+        const data = await res.json();
+        if (!data.systemName) data.systemName = 'EDR Security System';
+        delete data.autoRefresh;
+        delete data.refreshInterval;
+        setDefaultGeneralSettings(data);
+        setGeneralSettings(data);
+        if (data.eventActions) setEventActions(Array.isArray(data.eventActions) ? data.eventActions : []);
+      } catch (e) {
+        setDefaultGeneralSettings({
+          systemName: 'EDR Security System',
+          timeFormat: 'vn',
+        });
+        setGeneralSettings({
+          systemName: 'EDR Security System',
+          timeFormat: 'vn',
+        });
+      }
+    }
+    fetchDefaultSettings();
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === 'general') {
+      if (JSON.stringify(generalSettings) !== JSON.stringify(defaultGeneralSettings)) {
+        setGeneralSettings(defaultGeneralSettings);
+      }
+    }
+    // eslint-disable-next-line
+  }, [activeTab, defaultGeneralSettings]);
+
+  // Khi vào tab actions, ưu tiên lấy localStorage trước, sau đó mới gọi backend
+  useEffect(() => {
+    if (activeTab === 'actions') {
+      // Ưu tiên lấy localStorage trước để giữ UI
+      const saved = localStorage.getItem('actionSettingsV2');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (parsed.globalActionMode) setGlobalActionMode(parsed.globalActionMode);
+          if (parsed.eventActions) setEventActions(Array.isArray(parsed.eventActions) ? parsed.eventActions : []);
+          console.log('LocalStorage actionSettingsV2:', parsed);
+        } catch {}
+      }
+      // Gọi backend để lấy dữ liệu mới nhất (nếu có)
+      const fetchSettings = async () => {
+        try {
+          const res = await fetch(`/api/v1/agents/${AGENT_ID}/action-settings`);
+          if (res.ok) {
+            const data = await res.json();
+            console.log('API action-settings:', data);
+            if (
+              data &&
+              typeof data.globalActionMode === 'string' &&
+              Array.isArray(data.eventActions) &&
+              data.eventActions.length > 0
+            ) {
+              // Nếu API trả về đúng mặc định (alert_only + 4 eventActions mặc định), bỏ qua không set state
+              const isDefault =
+                data.globalActionMode === 'alert_only' &&
+                data.eventActions.length === 4 &&
+                data.eventActions.every(ea =>
+                  ['Process', 'Network', 'File', 'Registry'].includes(ea.event_type) &&
+                  ea.enabled === false
+                );
+              if (!isDefault) {
+                setGlobalActionMode(data.globalActionMode);
+                setEventActions(data.eventActions);
+              }
+            }
+          }
+        } catch {}
+      };
+      fetchSettings();
+    }
+  }, [activeTab]);
 
   return (
     <div className={`
@@ -123,16 +391,17 @@ const Settings = () => {
           <nav className="space-y-2">
             {tabs.map(tab => {
               let tabIconColor = '';
+              let tabTextColor = '';
               if (activeTab === tab.id) {
                 tabIconColor = 'text-white';
+                tabTextColor = 'text-white';
               } else {
                 switch (tab.id) {
                   case 'general': tabIconColor = 'text-purple-500'; break;
-                  case 'security': tabIconColor = 'text-blue-500'; break;
-                  case 'notifications': tabIconColor = 'text-yellow-500'; break;
-                  case 'integrations': tabIconColor = 'text-green-500'; break;
+                  case 'actions': tabIconColor = 'text-blue-500'; break;
                   default: tabIconColor = 'text-gray-400';
                 }
+                tabTextColor = isDarkMode ? 'text-gray-200' : 'text-gray-700';
               }
               return (
                 <button
@@ -141,11 +410,11 @@ const Settings = () => {
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-all duration-200
                     ${activeTab === tab.id
                       ? 'bg-purple-600 text-white shadow-lg font-semibold'
-                      : 'bg-white text-gray-700 font-semibold hover:bg-purple-50 hover:text-purple-700 border border-gray-200'}
+                      : `bg-white/5 font-semibold hover:bg-purple-50 hover:text-purple-700 border border-gray-200/20 ${tabTextColor}`}
                   `}
                 >
                   <tab.icon className={`w-5 h-5 ${tabIconColor} transition-colors duration-200`} />
-                  <span className="font-medium">{tab.name}</span>
+                  <span className={`font-medium ${tabTextColor}`}>{tab.name}</span>
                 </button>
               );
             })}
@@ -155,348 +424,288 @@ const Settings = () => {
         {/* Main Content */}
         <div className="flex-1 p-8">
           {activeTab === 'general' && (
-            <div className="space-y-6">
-              <div className="bg-white/10 rounded-2xl p-6 border border-white/10 shadow-xl">
-                <h2 className="text-xl font-semibold text-white mb-6 flex items-center gap-2">
-                  <Cog6ToothIcon className="w-6 h-6 text-purple-400" />
-                  General Settings
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>System Name</label>
-                    <input
-                      type="text"
-                      value={generalSettings.systemName}
-                      onChange={(e) => setGeneralSettings({...generalSettings, systemName: e.target.value})}
-                      className={`w-full px-4 py-2 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-400 transition-all duration-200
-                        ${isDarkMode ? 'bg-white/10 border border-white/10 text-white placeholder:text-gray-400' : 'bg-white border border-gray-300 text-gray-800 placeholder:text-gray-500 shadow-sm hover:border-purple-400 focus:bg-white'}
-                      `}
-                    />
-                  </div>
-                  <div>
-                    <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Timezone</label>
-                    <select
-                      value={generalSettings.timezone}
-                      onChange={(e) => setGeneralSettings({...generalSettings, timezone: e.target.value})}
-                      className={`w-full px-4 py-2 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-400 transition-all duration-200
-                        ${isDarkMode ? 'bg-white/10 border border-white/10 text-white placeholder:text-gray-400' : 'bg-white border border-gray-300 text-gray-800 placeholder:text-gray-500 shadow-sm hover:border-purple-400 focus:bg-white'}
-                      `}
-                    >
-                      <option value="UTC">UTC</option>
-                      <option value="EST">Eastern Time</option>
-                      <option value="PST">Pacific Time</option>
-                      <option value="GMT">GMT</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Language</label>
-                    <select
-                      value={generalSettings.language}
-                      onChange={(e) => setGeneralSettings({...generalSettings, language: e.target.value})}
-                      className={`w-full px-4 py-2 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-400 transition-all duration-200
-                        ${isDarkMode ? 'bg-white/10 border border-white/10 text-white placeholder:text-gray-400' : 'bg-white border border-gray-300 text-gray-800 placeholder:text-gray-500 shadow-sm hover:border-purple-400 focus:bg-white'}
-                      `}
-                    >
-                      <option value="en">English</option>
-                      <option value="es">Spanish</option>
-                      <option value="fr">French</option>
-                      <option value="de">German</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Auto Refresh Interval (seconds)</label>
-                    <input
-                      type="number"
-                      value={generalSettings.refreshInterval}
-                      onChange={(e) => setGeneralSettings({...generalSettings, refreshInterval: parseInt(e.target.value)})}
-                      className={`w-full px-4 py-2 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-400 transition-all duration-200
-                        ${isDarkMode ? 'bg-white/10 border border-white/10 text-white placeholder:text-gray-400' : 'bg-white border border-gray-300 text-gray-800 placeholder:text-gray-500 shadow-sm hover:border-purple-400 focus:bg-white'}
-                      `}
-                    />
-                  </div>
-                  <div className="md:col-span-2">
-                    <label className={`flex items-center gap-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                      <input
-                        type="checkbox"
-                        checked={generalSettings.autoRefresh}
-                        onChange={(e) => setGeneralSettings({...generalSettings, autoRefresh: e.target.checked})}
-                        className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                      />
-                      <span className="text-sm font-medium text-gray-300">Enable Auto Refresh</span>
-                    </label>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <GeneralSettings
+              generalSettings={generalSettings}
+              setGeneralSettings={setGeneralSettings}
+              isDarkMode={isDarkMode}
+              onSave={() => handleSaveClick('general')}
+              loading={loading}
+              saved={saved}
+            />
           )}
 
-          {activeTab === 'security' && (
-            <div className="space-y-6">
-              <div className="bg-white/10 rounded-2xl p-6 border border-white/10 shadow-xl">
-                <h2 className="text-xl font-semibold text-white mb-6 flex items-center gap-2">
-                  <ShieldCheckIcon className="w-6 h-6 text-purple-400" />
-                  Security Settings
+          {activeTab === 'actions' && (
+            <div className={`
+              bg-white/10 dark:bg-slate-900 rounded-2xl p-6 border border-white/10 shadow-xl
+              transition-all duration-300
+            `}>
+              <h2 className={`
+                text-2xl font-bold mb-6 flex items-center gap-3
+                ${isDarkMode ? 'text-white' : 'text-gray-900'}
+              `}>
+                <span className="inline-block w-8 h-8 bg-purple-500 dark:bg-purple-400 rounded-full flex items-center justify-center">
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6l4 2" /></svg>
+                </span>
+                Action Settings
                 </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Session Timeout (minutes)</label>
+              <div className="mb-6 flex gap-8 items-center">
+                <label className="inline-flex items-center">
                     <input
-                      type="number"
-                      value={securitySettings.sessionTimeout}
-                      onChange={(e) => setSecuritySettings({...securitySettings, sessionTimeout: parseInt(e.target.value)})}
-                      className={`w-full px-4 py-2 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-400 transition-all duration-200
-                        ${isDarkMode ? 'bg-white/10 border border-white/10 text-white placeholder:text-gray-400' : 'bg-white border border-gray-300 text-gray-800 placeholder:text-gray-500 shadow-sm hover:border-purple-400 focus:bg-white'}
-                      `}
-                    />
+                    type="radio"
+                    name="global-action-mode"
+                    value="alert_only"
+                    checked={globalActionMode === 'alert_only'}
+                    onChange={() => setGlobalActionMode('alert_only')}
+                    className="accent-blue-500"
+                  />
+                  <span className="ml-2 text-base">Chỉ gửi cảnh báo</span>
+                    </label>
+                <label className="inline-flex items-center">
+                      <input
+                    type="radio"
+                    name="global-action-mode"
+                    value="alert_and_action"
+                    checked={globalActionMode === 'alert_and_action'}
+                    onChange={() => setGlobalActionMode('alert_and_action')}
+                    className="accent-purple-600"
+                  />
+                  <span className="ml-2 text-base">Gửi cảnh báo và ngăn chặn</span>
+                    </label>
                   </div>
-                  <div>
-                    <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Password Policy</label>
-                    <select
-                      value={securitySettings.passwordPolicy}
-                      onChange={(e) => setSecuritySettings({...securitySettings, passwordPolicy: e.target.value})}
-                      className={`w-full px-4 py-2 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-400 transition-all duration-200
-                        ${isDarkMode ? 'bg-white/10 border border-white/10 text-white placeholder:text-gray-400' : 'bg-white border border-gray-300 text-gray-800 placeholder:text-gray-500 shadow-sm hover:border-purple-400 focus:bg-white'}
+              {globalActionMode === 'alert_and_action' ? (
+                <>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full text-sm rounded-xl overflow-hidden shadow border border-white/10">
+                      <thead>
+                        <tr className={isDarkMode ? "bg-slate-800 text-gray-200" : "bg-gray-100 text-gray-700"}>
+                          <th className="p-3 font-semibold">Event Type</th>
+                          <th className="p-3 font-semibold">Enable</th>
+                          <th className="p-3 font-semibold">Action</th>
+                          <th className="p-3 font-semibold">Severity</th>
+                          <th className="p-3 font-semibold">Config</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(Array.isArray(eventActions) ? eventActions : []).map((item, idx) => (
+                          <tr key={item.event_type} className={isDarkMode ? "border-b border-white/10" : "border-b border-gray-200"}>
+                            <td className="p-3 font-medium">{item.event_type}</td>
+                            <td className="p-3">
+                      <input
+                        type="checkbox"
+                                checked={item.enabled}
+                                onChange={e => handleEventActionChange(idx, 'enabled', e.target.checked)}
+                                className="w-5 h-5 accent-purple-600"
+                              />
+                            </td>
+                            <td className="p-3">
+                              {ACTION_TYPES[item.event_type].length === 1 ? (
+                                <span className={`inline-block px-3 py-1 rounded-full font-semibold text-sm shadow
+                                  ${isDarkMode ? 'bg-purple-700 text-white' : 'bg-purple-100 text-purple-700'}`}
+                                >
+                                  {ACTION_TYPES[item.event_type][0].label}
+                                </span>
+                              ) : (
+                        <select
+                                  className={`
+                                    rounded px-2 py-1
+                                    ${isDarkMode ? 'bg-slate-800 text-white border-white/20' : 'bg-white text-gray-900 border-gray-300'}
+                                    border focus:ring-2 focus:ring-purple-400
+                                    transition-all
+                                  `}
+                                  value={item.action}
+                                  onChange={e => handleEventActionChange(idx, 'action', e.target.value)}
+                                  disabled={!item.enabled}
+                                >
+                                  {ACTION_TYPES[item.event_type].map(opt => (
+                                    <option key={opt.key} value={opt.key}>{opt.label}</option>
+                                  ))}
+                        </select>
+                              )}
+                            </td>
+                            <td className="p-3">
+                              <Select
+                                isMulti
+                                value={SEVERITY_OPTIONS.filter(opt => item.severity.includes(opt.value))}
+                                onChange={opts => handleSeverityChange(idx, opts.map(o => o.value))}
+                                options={SEVERITY_OPTIONS}
+                                className="min-w-[160px] text-sm"
+                                styles={{
+                                  multiValue: (base, state) => ({
+                                    ...base,
+                                    backgroundColor: state.data.color + '22',
+                                    color: state.data.color,
+                                    borderRadius: 6,
+                                    padding: '0 4px'
+                                  }),
+                                  multiValueLabel: (base, state) => ({
+                                    ...base,
+                                    color: state.data.color,
+                                    fontWeight: 600
+                                  }),
+                                  multiValueRemove: (base, state) => ({
+                                    ...base,
+                                    color: state.data.color,
+                                    ':hover': { backgroundColor: state.data.color, color: 'white' }
+                                  }),
+                                  control: (base, state) => ({
+                                    ...base,
+                                    backgroundColor: isDarkMode ? '#1e293b' : '#fff',
+                                    borderColor: isDarkMode ? '#6366f1' : '#a5b4fc',
+                                    minHeight: 36,
+                                    boxShadow: state.isFocused ? '0 0 0 2px #a78bfa' : base.boxShadow
+                                  }),
+                                  menu: (base) => ({
+                                    ...base,
+                                    backgroundColor: isDarkMode ? '#1e293b' : '#fff',
+                                    color: isDarkMode ? '#fff' : '#000',
+                                  }),
+                                  option: (base, state) => ({
+                                    ...base,
+                                    backgroundColor: state.isSelected ? state.data.color + '22' : state.isFocused ? '#ede9fe' : 'inherit',
+                                    color: state.data.color,
+                                    fontWeight: state.isSelected ? 700 : 500
+                                  })
+                                }}
+                                isDisabled={!item.enabled}
+                                theme={theme => ({
+                                  ...theme,
+                                  borderRadius: 6,
+                                  colors: {
+                                    ...theme.colors,
+                                    primary25: '#ede9fe',
+                                    primary: '#a78bfa',
+                                    neutral0: isDarkMode ? '#1e293b' : '#fff',
+                                    neutral80: isDarkMode ? '#fff' : '#000',
+                                  }
+                                })}
+                              />
+                            </td>
+                            <td className="p-3">
+                              {/* Config phụ thuộc action */}
+                              {item.enabled && item.action === 'kill_process' && (
+                                <label className="flex items-center gap-2 group cursor-not-allowed select-none">
+                                  <span className="relative inline-block w-6 h-6 align-middle">
+                          <input
+                            type="checkbox"
+                                      checked={true}
+                                      disabled
+                                      className="opacity-0 absolute w-6 h-6 cursor-not-allowed"
+                                      tabIndex={-1}
+                                      readOnly
+                                    />
+                                    <span className="absolute inset-0 rounded bg-white/10 flex items-center justify-center">
+                                      <svg className="w-5 h-5" viewBox="0 0 20 20" fill="none">
+                                        <path d="M5 10.5L9 15L15 7" stroke="#22c55e" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                                      </svg>
+                                    </span>
+                                  </span>
+                                  <span className="text-sm font-semibold text-red-500 group-hover:text-red-400 transition-colors">Force Kill</span>
+                        </label>
+                              )}
+                              {item.enabled && item.action === 'block_network' && (
+                                <label className="flex items-center gap-2">
+                                  <span className="text-sm">Block Duration (h):</span>
+                                  <input type="number" min={1} className="w-16 rounded px-1 py-0.5 bg-slate-800 text-white border border-white/20" value={item.config.block_duration_hours || 24} onChange={e => handleConfigChange(idx, 'block_duration_hours', Number(e.target.value))} />
+                    </label>
+                              )}
+                              {item.enabled && item.action === 'quarantine_file' && (
+                                <label className="flex items-center gap-2">
+                                  <input type="checkbox" checked={item.config.backup || false} onChange={e => handleConfigChange(idx, 'backup', e.target.checked)} className="accent-green-600" />
+                                  <span className="text-sm">Backup File</span>
+                        </label>
+                              )}
+                              {item.enabled && item.action === 'block_registry' && (
+                                <span className="text-sm text-yellow-400">Block Registry Change</span>
+                              )}
+                              {item.enabled && item.action === 'disable_user' && (
+                                <label className="flex items-center gap-2">
+                                  <span className="text-sm">Duration (h):</span>
+                                  <input type="number" min={1} className="w-16 rounded px-1 py-0.5 bg-slate-800 text-white border border-white/20" value={item.config.disable_duration_hours || 24} onChange={e => handleConfigChange(idx, 'disable_duration_hours', Number(e.target.value))} />
+                    </label>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div className="mt-6 flex justify-end">
+                    <button
+                      className={`
+                        px-6 py-2 rounded-lg font-semibold shadow-lg transition-all
+                        ${isDarkMode
+                          ? 'bg-purple-600 text-white hover:bg-purple-700'
+                          : 'bg-purple-600 text-white hover:bg-purple-700'}
                       `}
+                      onClick={() => handleSaveClick('actions')}
+                      disabled={loading}
                     >
-                      <option value="basic">Basic</option>
-                      <option value="strong">Strong</option>
-                      <option value="very-strong">Very Strong</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Encryption Level</label>
-                    <select
-                      value={securitySettings.encryptionLevel}
-                      onChange={(e) => setSecuritySettings({...securitySettings, encryptionLevel: e.target.value})}
-                      className={`w-full px-4 py-2 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-400 transition-all duration-200
-                        ${isDarkMode ? 'bg-white/10 border border-white/10 text-white placeholder:text-gray-400' : 'bg-white border border-gray-300 text-gray-800 placeholder:text-gray-500 shadow-sm hover:border-purple-400 focus:bg-white'}
-                      `}
-                    >
-                      <option value="standard">Standard</option>
-                      <option value="high">High</option>
-                      <option value="military">Military Grade</option>
-                    </select>
-                  </div>
-                  <div className="space-y-4">
-                    <label className={`flex items-center gap-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                      <input
-                        type="checkbox"
-                        checked={securitySettings.requireMFA}
-                        onChange={(e) => setSecuritySettings({...securitySettings, requireMFA: e.target.checked})}
-                        className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                      />
-                      <span className="text-sm font-medium text-gray-300">Require Multi-Factor Authentication</span>
-                    </label>
-                    <label className={`flex items-center gap-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                      <input
-                        type="checkbox"
-                        checked={securitySettings.auditLogging}
-                        onChange={(e) => setSecuritySettings({...securitySettings, auditLogging: e.target.checked})}
-                        className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                      />
-                      <span className="text-sm font-medium text-gray-300">Enable Audit Logging</span>
-                    </label>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'notifications' && (
-            <div className="space-y-6">
-              <div className="bg-white/10 rounded-2xl p-6 border border-white/10 shadow-xl">
-                <h2 className="text-xl font-semibold text-white mb-6 flex items-center gap-2">
-                  <BellIcon className="w-6 h-6 text-purple-400" />
-                  Notification Settings
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Alert Level</label>
-                    <select
-                      value={notificationSettings.alertLevel}
-                      onChange={(e) => setNotificationSettings({...notificationSettings, alertLevel: e.target.value})}
-                      className={`w-full px-4 py-2 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-400 transition-all duration-200
-                        ${isDarkMode ? 'bg-white/10 border border-white/10 text-white placeholder:text-gray-400' : 'bg-white border border-gray-300 text-gray-800 placeholder:text-gray-500 shadow-sm hover:border-purple-400 focus:bg-white'}
-                      `}
-                    >
-                      <option value="all">All Alerts</option>
-                      <option value="high">High and Critical</option>
-                      <option value="critical">Critical Only</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Quiet Hours Start</label>
-                    <input
-                      type="time"
-                      value={notificationSettings.quietStart}
-                      onChange={(e) => setNotificationSettings({...notificationSettings, quietStart: e.target.value})}
-                      className={`w-full px-4 py-2 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-400 transition-all duration-200
-                        ${isDarkMode ? 'bg-white/10 border border-white/10 text-white placeholder:text-gray-400' : 'bg-white border border-gray-300 text-gray-800 placeholder:text-gray-500 shadow-sm hover:border-purple-400 focus:bg-white'}
-                      `}
-                    />
-                  </div>
-                  <div>
-                    <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Quiet Hours End</label>
-                    <input
-                      type="time"
-                      value={notificationSettings.quietEnd}
-                      onChange={(e) => setNotificationSettings({...notificationSettings, quietEnd: e.target.value})}
-                      className={`w-full px-4 py-2 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-400 transition-all duration-200
-                        ${isDarkMode ? 'bg-white/10 border border-white/10 text-white placeholder:text-gray-400' : 'bg-white border border-gray-300 text-gray-800 placeholder:text-gray-500 shadow-sm hover:border-purple-400 focus:bg-white'}
-                      `}
-                    />
-                  </div>
-                  <div className="space-y-4">
-                    <label className={`flex items-center gap-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                      <input
-                        type="checkbox"
-                        checked={notificationSettings.emailAlerts}
-                        onChange={(e) => setNotificationSettings({...notificationSettings, emailAlerts: e.target.checked})}
-                        className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                      />
-                      <span className="text-sm font-medium text-gray-300">Email Alerts</span>
-                    </label>
-                    <label className={`flex items-center gap-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                      <input
-                        type="checkbox"
-                        checked={notificationSettings.smsAlerts}
-                        onChange={(e) => setNotificationSettings({...notificationSettings, smsAlerts: e.target.checked})}
-                        className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                      />
-                      <span className="text-sm font-medium text-gray-300">SMS Alerts</span>
-                    </label>
-                    <label className={`flex items-center gap-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                      <input
-                        type="checkbox"
-                        checked={notificationSettings.webhookAlerts}
-                        onChange={(e) => setNotificationSettings({...notificationSettings, webhookAlerts: e.target.checked})}
-                        className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                      />
-                      <span className="text-sm font-medium text-gray-300">Webhook Alerts</span>
-                    </label>
-                    <label className={`flex items-center gap-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                      <input
-                        type="checkbox"
-                        checked={notificationSettings.quietHours}
-                        onChange={(e) => setNotificationSettings({...notificationSettings, quietHours: e.target.checked})}
-                        className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                      />
-                      <span className="text-sm font-medium text-gray-300">Enable Quiet Hours</span>
-                    </label>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'integrations' && (
-            <div className="space-y-6">
-              <div className="bg-white/10 rounded-2xl p-6 border border-white/10 shadow-xl">
-                <h2 className="text-xl font-semibold text-white mb-6 flex items-center gap-2">
-                  <GlobeAltIcon className="w-6 h-6 text-purple-400" />
-                  Integration Settings
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>API Key</label>
-                    <div className="relative">
-                      <input
-                        type={showPassword ? "text" : "password"}
-                        value={integrationSettings.apiKey}
-                        onChange={(e) => setIntegrationSettings({...integrationSettings, apiKey: e.target.value})}
-                        className={`w-full px-4 py-2 pr-12 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-400 transition-all duration-200
-                          ${isDarkMode ? 'bg-white/10 border border-white/10 text-white placeholder:text-gray-400' : 'bg-white border border-gray-300 text-gray-800 placeholder:text-gray-500 shadow-sm hover:border-purple-400 focus:bg-white'}
-                        `}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                      >
-                        {showPassword ? (
-                          <EyeSlashIcon className="h-5 w-5 text-gray-400" />
-                        ) : (
-                          <EyeIcon className="h-5 w-5 text-gray-400" />
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                  <div>
-                    <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Webhook URL</label>
-                    <input
-                      type="url"
-                      value={integrationSettings.webhookUrl}
-                      onChange={(e) => setIntegrationSettings({...integrationSettings, webhookUrl: e.target.value})}
-                      placeholder="https://your-webhook-url.com"
-                      className={`w-full px-4 py-2 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-400 transition-all duration-200
-                        ${isDarkMode ? 'bg-white/10 border border-white/10 text-white placeholder:text-gray-400' : 'bg-white border border-gray-300 text-gray-800 placeholder:text-gray-500 shadow-sm hover:border-purple-400 focus:bg-white'}
-                      `}
-                    />
-                  </div>
-                  <div className="space-y-4">
-                    <label className={`flex items-center gap-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                      <input
-                        type="checkbox"
-                        checked={integrationSettings.apiEnabled}
-                        onChange={(e) => setIntegrationSettings({...integrationSettings, apiEnabled: e.target.checked})}
-                        className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                      />
-                      <span className="text-sm font-medium text-gray-300">Enable API Access</span>
-                    </label>
-                    <label className={`flex items-center gap-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                      <input
-                        type="checkbox"
-                        checked={integrationSettings.slackIntegration}
-                        onChange={(e) => setIntegrationSettings({...integrationSettings, slackIntegration: e.target.checked})}
-                        className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                      />
-                      <span className="text-sm font-medium text-gray-300">Slack Integration</span>
-                    </label>
-                    <label className={`flex items-center gap-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                      <input
-                        type="checkbox"
-                        checked={integrationSettings.teamsIntegration}
-                        onChange={(e) => setIntegrationSettings({...integrationSettings, teamsIntegration: e.target.checked})}
-                        className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                      />
-                      <span className="text-sm font-medium text-gray-300">Microsoft Teams Integration</span>
-                    </label>
-                    <label className={`flex items-center gap-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                      <input
-                        type="checkbox"
-                        checked={integrationSettings.emailIntegration}
-                        onChange={(e) => setIntegrationSettings({...integrationSettings, emailIntegration: e.target.checked})}
-                        className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                      />
-                      <span className="text-sm font-medium text-gray-300">Email Integration</span>
-                    </label>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Save Button */}
-          <div className="flex justify-end">
-            <button
-              onClick={() => handleSave(activeTab)}
-              disabled={loading}
-              className="flex items-center gap-2 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium disabled:opacity-50 shadow-lg"
-            >
-              {loading ? (
-                <ArrowPathIcon className="w-5 h-5 animate-spin" />
-              ) : saved ? (
-                <CheckCircleIcon className="w-5 h-5" />
+                      Save Actions
+                    </button>
+                    {saved && (
+                      <span className="ml-4 text-green-400 font-medium flex items-center gap-2"><CheckCircleIcon className="w-5 h-5" /> Saved!</span>
+                   )}
+                 </div>
+                </>
               ) : (
-                <Cog6ToothIcon className="w-5 h-5" />
+                <>
+                  <div className="p-6 text-lg text-blue-400 font-semibold">
+                    Server sẽ chỉ gửi cảnh báo, không thực hiện hành động tự động nào.
+                       </div>
+                  <div className="mt-6 flex justify-end">
+                    <button
+                      className={`
+                        px-6 py-2 rounded-lg font-semibold shadow-lg transition-all
+                        ${isDarkMode
+                          ? 'bg-purple-600 text-white hover:bg-purple-700'
+                          : 'bg-purple-600 text-white hover:bg-purple-700'}
+                      `}
+                      onClick={() => handleSaveClick('actions')}
+                      disabled={loading}
+                    >
+                      Save Actions
+                    </button>
+                    {saved && (
+                      <span className="ml-4 text-green-400 font-medium flex items-center gap-2"><CheckCircleIcon className="w-5 h-5" /> Saved!</span>
+                    )}
+                       </div>
+                </>
               )}
-              {loading ? 'Saving...' : saved ? 'Saved!' : 'Save Changes'}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+                     </div>
+                   )}
+                 </div>
+                   </div>
+                   
+      {/* Modal xác nhận */}
+      {showConfirm && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-slate-800 rounded-xl p-8 shadow-xl flex flex-col items-center gap-6">
+            <div className="text-lg font-semibold text-gray-900 dark:text-white">Bạn có muốn thay đổi không?</div>
+            <div className="flex gap-4">
+              <button onClick={handleConfirmYes} className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium">Yes</button>
+              <button onClick={handleConfirmNo} className="px-6 py-2 bg-gray-400 text-white rounded-lg hover:bg-gray-500 font-medium">No</button>
+                       </div>
+                       </div>
+                     </div>
+                   )}
+                 </div>
   );
 };
 
-export default Settings; 
+// Thông báo Saved! chỉ hiển thị một lần duy nhất
+export default function SettingsWrapper(props) {
+  const settings = Settings(props);
+  const [saved, setSaved] = React.useState(false);
+  // ... existing code ...
+  return (
+    <>
+      {settings}
+      {saved && (
+        <div className="fixed bottom-8 right-8 bg-purple-500 text-white px-6 py-3 rounded-xl shadow-lg flex items-center gap-2 z-50">
+                <CheckCircleIcon className="w-5 h-5" />
+          Saved
+          </div>
+      )}
+    </>
+  );
+} 

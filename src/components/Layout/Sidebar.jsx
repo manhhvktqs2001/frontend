@@ -44,7 +44,7 @@ const Sidebar = ({ currentPath = '/', user = { role: 'admin' } }) => {
       try {
         const [stats, alerts, threats, agents] = await Promise.all([
           fetchDashboardStats(),
-          fetchAlerts(),
+          fetchAlerts({ limit: 10000, hours: 0 }),
           fetchThreats(),
           fetchAgents()
         ]);
@@ -257,7 +257,7 @@ const Sidebar = ({ currentPath = '/', user = { role: 'admin' } }) => {
                       className={`ml-auto px-2 py-0.5 rounded-full font-bold shadow-sm text-xs transition-colors duration-200
                         ${item.badgeColor} text-white border border-gray-300 dark:border-gray-600`}
                     >
-                      {item.badge}
+                      {item.label === 'Alerts' && item.badge > 999 ? '999+' : item.badge}
                     </span>
                   )}
                 </button>

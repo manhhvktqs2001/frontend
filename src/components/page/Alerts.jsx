@@ -54,12 +54,24 @@ const Alerts = () => {
   const fetchAlertsData = async () => {
     setLoading(true);
     try {
-      const data = await fetchAlerts({ limit: 1000, hours: 0 });
-      setAlerts(data.alerts || []);
+      // Sử dụng limit=10000 để lấy tất cả alerts
+      console.log('🔄 Fetching alerts with limit=10000...');
+      const data = await fetchAlerts({ limit: 10000, hours: 0 });
+      console.log('✅ Alerts fetched:', data);
+      
+      if (data && data.alerts) {
+        setAlerts(data.alerts);
+        console.log(`📊 Loaded ${data.alerts.length} alerts`);
+      } else {
+        setAlerts([]);
+        console.log('⚠️ No alerts data received');
+      }
+      
       setLastUpdated(new Date());
       setError(null);
     } catch (err) {
-      setError('Cannot load alerts data. Please check your connection.');
+      console.error('❌ Error fetching alerts:', err);
+      setError(`Cannot load alerts data: ${err.message}`);
     } finally {
       setLoading(false);
     }
@@ -309,27 +321,31 @@ const Alerts = () => {
             <p className={`text-sm mt-1 transition-colors duration-300 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>Monitor security alerts and incidents</p>
           </div>
         </div>
-        <div className="flex items-center gap-4">
-          <button
-            onClick={fetchAlertsData}
-            disabled={loading}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium disabled:opacity-50 shadow-lg transition-all duration-200 hover:scale-105 ${isDarkMode ? 'bg-purple-600 text-white hover:bg-purple-700' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
-          >
-            <ArrowPathIcon className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
-            Refresh
-          </button>
-          <button
-            onClick={exportAlerts}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium shadow-lg transition-all duration-200 hover:scale-105 ${isDarkMode ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-green-600 text-white hover:bg-green-700'}`}
-          >
-            <ArrowDownTrayIcon className="w-5 h-5" />
-            Export All
-          </button>
-          <div className={`flex items-center gap-2 text-sm transition-colors duration-300 ${isDarkMode ? 'text-gray-200' : 'text-gray-600'}`}>
-            <ClockIcon className="w-4 h-4" />
-            <span>Last updated: {lastUpdated.toLocaleTimeString()}</span>
+                  <div className="flex items-center gap-4">
+            <button
+              onClick={fetchAlertsData}
+              disabled={loading}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium disabled:opacity-50 shadow-lg transition-all duration-200 hover:scale-105 ${isDarkMode ? 'bg-purple-600 text-white hover:bg-purple-700' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
+            >
+              <ArrowPathIcon className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
+              Refresh
+            </button>
+            <button
+              onClick={exportAlerts}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium shadow-lg transition-all duration-200 hover:scale-105 ${isDarkMode ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-green-600 text-white hover:bg-green-700'}`}
+            >
+              <ArrowDownTrayIcon className="w-5 h-5" />
+              Export All
+            </button>
+            <div className={`flex items-center gap-2 text-sm transition-colors duration-300 ${isDarkMode ? 'text-gray-200' : 'text-gray-600'}`}>
+              <ClockIcon className="w-4 h-4" />
+              <span>Last updated: {lastUpdated.toLocaleTimeString()}</span>
+            </div>
+            {/* Debug info */}
+            <div className={`flex items-center gap-2 text-xs transition-colors duration-300 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+              <span>Total: {alerts.length} alerts</span>
+            </div>
           </div>
-        </div>
       </div>
 
       {/* Stats Cards */}

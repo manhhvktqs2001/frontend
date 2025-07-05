@@ -872,22 +872,22 @@ const Rules = () => {
                   />
                 </th>
                 <th className={`px-6 py-3 text-left text-xs font-bold uppercase tracking-wider
-                  ${isDarkMode ? 'text-gray-600' : 'text-gray-700'}
+                  ${isDarkMode ? 'text-white' : 'text-gray-700'}
                 `}>Rule</th>
                 <th className={`px-6 py-3 text-left text-xs font-bold uppercase tracking-wider
-                  ${isDarkMode ? 'text-gray-600' : 'text-gray-700'}
+                  ${isDarkMode ? 'text-white' : 'text-gray-700'}
                 `}>Type</th>
                 <th className={`px-6 py-3 text-left text-xs font-bold uppercase tracking-wider
-                  ${isDarkMode ? 'text-gray-600' : 'text-gray-700'}
+                  ${isDarkMode ? 'text-white' : 'text-gray-700'}
                 `}>Severity</th>
                 <th className={`px-6 py-3 text-left text-xs font-bold uppercase tracking-wider
-                  ${isDarkMode ? 'text-gray-600' : 'text-gray-700'}
+                  ${isDarkMode ? 'text-white' : 'text-gray-700'}
                 `}>Status</th>
                 <th className={`px-6 py-3 text-left text-xs font-bold uppercase tracking-wider
-                  ${isDarkMode ? 'text-gray-600' : 'text-gray-700'}
+                  ${isDarkMode ? 'text-white' : 'text-gray-700'}
                 `}>Platform</th>
                 <th className={`px-6 py-3 text-left text-xs font-bold uppercase tracking-wider
-                  ${isDarkMode ? 'text-gray-600' : 'text-gray-700'}
+                  ${isDarkMode ? 'text-white' : 'text-gray-700'}
                 `}>Actions</th>
               </tr>
             </thead>
@@ -1281,16 +1281,16 @@ const Rules = () => {
                         </Listbox.Button>
                         <Listbox.Options className={`absolute z-50 mt-1 w-full rounded-xl shadow-2xl max-h-60 overflow-auto transition-all duration-150
                           ${isDarkMode ? 'bg-black border border-purple-500' : 'bg-white border border-purple-400'}`}>
-                          {ruleTypeOptions.map(opt => (
+                            {ruleTypeOptions.map(opt => (
                             <Listbox.Option key={opt.value} value={opt.value} className={({ active, selected }) =>
                               `cursor-pointer select-none px-4 py-2 transition-all duration-100
                               ${isDarkMode ? (active ? 'bg-purple-700 text-white' : 'text-white') : (active ? 'bg-purple-50 text-purple-700' : 'bg-white text-gray-800')}
                               ${selected ? (isDarkMode ? 'font-bold text-purple-300' : 'font-bold text-purple-700') : ''}`
                             }>
-                              {opt.label}
-                            </Listbox.Option>
-                          ))}
-                        </Listbox.Options>
+                                {opt.label}
+                              </Listbox.Option>
+                            ))}
+                          </Listbox.Options>
                       </div>
                     )}
                   </Listbox>
@@ -1319,16 +1319,16 @@ const Rules = () => {
                         </Listbox.Button>
                         <Listbox.Options className={`absolute z-50 mt-1 w-full rounded-xl shadow-2xl max-h-60 overflow-auto transition-all duration-150
                           ${isDarkMode ? 'bg-black border border-purple-500' : 'bg-white border border-purple-400'}`}>
-                          {eventTypeOptions.map(opt => (
+                            {eventTypeOptions.map(opt => (
                             <Listbox.Option key={opt.value} value={opt.value} className={({ active, selected }) =>
                               `cursor-pointer select-none px-4 py-2 transition-all duration-100
                               ${isDarkMode ? (active ? 'bg-purple-700 text-white' : 'text-white') : (active ? 'bg-purple-50 text-purple-700' : 'bg-white text-gray-800')}
                               ${selected ? (isDarkMode ? 'font-bold text-purple-300' : 'font-bold text-purple-700') : ''}`
                             }>
-                              {opt.label}
-                            </Listbox.Option>
-                          ))}
-                        </Listbox.Options>
+                                {opt.label}
+                              </Listbox.Option>
+                            ))}
+                          </Listbox.Options>
                       </div>
                     )}
                   </Listbox>
@@ -1406,16 +1406,16 @@ const Rules = () => {
                         </Listbox.Button>
                         <Listbox.Options className={`absolute z-50 mt-1 w-full rounded-xl shadow-2xl max-h-60 overflow-auto transition-all duration-150
                           ${isDarkMode ? 'bg-black border border-purple-500' : 'bg-white border border-purple-400'}`}>
-                          {platformOptions.map(opt => (
+                            {platformOptions.map(opt => (
                             <Listbox.Option key={opt.value} value={opt.value} className={({ active, selected }) =>
                               `cursor-pointer select-none px-4 py-2 transition-all duration-100
                               ${isDarkMode ? (active ? 'bg-purple-700 text-white' : 'text-white') : (active ? 'bg-purple-50 text-purple-700' : 'bg-white text-gray-800')}
                               ${selected ? (isDarkMode ? 'font-bold text-purple-300' : 'font-bold text-purple-700') : ''}`
                             }>
-                              {opt.label}
-                            </Listbox.Option>
-                          ))}
-                        </Listbox.Options>
+                                {opt.label}
+                              </Listbox.Option>
+                            ))}
+                          </Listbox.Options>
                       </div>
                     )}
                   </Listbox>
@@ -1457,16 +1457,16 @@ const Rules = () => {
                         </Listbox.Button>
                         <Listbox.Options className={`absolute z-50 mt-1 w-full rounded-xl shadow-2xl max-h-60 overflow-auto transition-all duration-150
                           ${isDarkMode ? 'bg-black border border-purple-500' : 'bg-white border border-purple-400'}`}>
-                          {severityOptions.map(opt => (
+                            {severityOptions.map(opt => (
                             <Listbox.Option key={opt.value} value={opt.value} className={({ active, selected }) =>
                               `cursor-pointer select-none px-4 py-2 transition-all duration-100
                               ${isDarkMode ? (active ? 'bg-purple-700 text-white' : 'text-white') : (active ? 'bg-purple-50 text-purple-700' : 'bg-white text-gray-800')}
                               ${selected ? (isDarkMode ? 'font-bold text-purple-300' : 'font-bold text-purple-700') : ''}`
                             }>
-                              {opt.label}
-                            </Listbox.Option>
-                          ))}
-                        </Listbox.Options>
+                                {opt.label}
+                              </Listbox.Option>
+                            ))}
+                          </Listbox.Options>
                       </div>
                     )}
                   </Listbox>
@@ -1484,21 +1484,21 @@ const Rules = () => {
                         </Listbox.Button>
                         <Listbox.Options className={`absolute z-50 mt-1 w-full rounded-xl shadow-2xl max-h-60 overflow-auto transition-all duration-150
                           ${isDarkMode ? 'bg-black border border-purple-500' : 'bg-white border border-purple-400'}`}>
-                          {alertTypeOptions.map(opt => (
+                            {alertTypeOptions.map(opt => (
                             <Listbox.Option key={opt} value={opt} className={({ active, selected }) =>
                               `cursor-pointer select-none px-4 py-2 transition-all duration-100
                               ${isDarkMode ? (active ? 'bg-purple-700 text-white' : 'text-white') : (active ? 'bg-purple-50 text-purple-700' : 'bg-white text-gray-800')}
                               ${selected ? (isDarkMode ? 'font-bold text-purple-300' : 'font-bold text-purple-700') : ''}`
                             }>
-                              {({ selected }) => (
-                                <div className="flex items-center gap-2">
-                                  {selected && <CheckIcon className="w-4 h-4 text-green-400" />}
-                                  {opt}
-                                </div>
-                              )}
-                            </Listbox.Option>
-                          ))}
-                        </Listbox.Options>
+                                {({ selected }) => (
+                                  <div className="flex items-center gap-2">
+                                    {selected && <CheckIcon className="w-4 h-4 text-green-400" />}
+                                    {opt}
+                                  </div>
+                                )}
+                              </Listbox.Option>
+                            ))}
+                          </Listbox.Options>
                       </div>
                     )}
                   </Listbox>
@@ -1515,21 +1515,21 @@ const Rules = () => {
                         </Listbox.Button>
                         <Listbox.Options className={`absolute z-50 mt-1 w-full rounded-xl shadow-2xl max-h-60 overflow-auto transition-all duration-150
                           ${isDarkMode ? 'bg-black border border-purple-500' : 'bg-white border border-purple-400'}`}>
-                          {mitreTacticOptions.map(opt => (
+                            {mitreTacticOptions.map(opt => (
                             <Listbox.Option key={opt} value={opt} className={({ active, selected }) =>
                               `cursor-pointer select-none px-4 py-2 transition-all duration-100
                               ${isDarkMode ? (active ? 'bg-purple-700 text-white' : 'text-white') : (active ? 'bg-purple-50 text-purple-700' : 'bg-white text-gray-800')}
                               ${selected ? (isDarkMode ? 'font-bold text-purple-300' : 'font-bold text-purple-700') : ''}`
                             }>
-                              {({ selected }) => (
-                                <div className="flex items-center gap-2">
-                                  {selected && <CheckIcon className="w-4 h-4 text-green-400" />}
-                                  {opt}
-                                </div>
-                              )}
-                            </Listbox.Option>
-                          ))}
-                        </Listbox.Options>
+                                {({ selected }) => (
+                                  <div className="flex items-center gap-2">
+                                    {selected && <CheckIcon className="w-4 h-4 text-green-400" />}
+                                    {opt}
+                                  </div>
+                                )}
+                              </Listbox.Option>
+                            ))}
+                          </Listbox.Options>
                       </div>
                     )}
                   </Listbox>
@@ -1557,21 +1557,21 @@ const Rules = () => {
                             </Listbox.Button>
                             <Listbox.Options className={`absolute z-50 mt-1 w-full rounded-xl shadow-2xl max-h-60 overflow-auto transition-all duration-150
                               ${isDarkMode ? 'bg-black border border-purple-500' : 'bg-white border border-purple-400'}`}>
-                              {['Khác', ...uniqueMitreTechniqueOptions].map(opt => (
+                                {['Khác', ...uniqueMitreTechniqueOptions].map(opt => (
                                 <Listbox.Option key={opt} value={opt} className={({ active, selected }) =>
                                   `cursor-pointer select-none px-4 py-2 transition-all duration-100
                                   ${isDarkMode ? (active ? 'bg-purple-700 text-white' : 'text-white') : (active ? 'bg-purple-50 text-purple-700' : 'bg-white text-gray-800')}
                                   ${selected ? (isDarkMode ? 'font-bold text-purple-300' : 'font-bold text-purple-700') : ''}`
                                 }>
-                                  {({ selected }) => (
-                                    <div className="flex items-center gap-2">
-                                      {selected && <CheckIcon className="w-4 h-4 text-green-400" />}
-                                      {opt}
-                                    </div>
-                                  )}
-                                </Listbox.Option>
-                              ))}
-                            </Listbox.Options>
+                                    {({ selected }) => (
+                                      <div className="flex items-center gap-2">
+                                        {selected && <CheckIcon className="w-4 h-4 text-green-400" />}
+                                        {opt}
+                                      </div>
+                                    )}
+                                  </Listbox.Option>
+                                ))}
+                              </Listbox.Options>
                           </div>
                         )}
                       </Listbox>

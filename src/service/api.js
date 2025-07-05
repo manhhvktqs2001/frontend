@@ -96,7 +96,9 @@ export const fetchEventStats = async () => {
 
 // Alerts APIs
 export const fetchAlerts = async (params = {}) => {
+  console.log('Fetching alerts with params:', params);
   const response = await api.get('/alerts/list', { params });
+  console.log('Alerts response:', response.data);
   return response.data;
 };
 

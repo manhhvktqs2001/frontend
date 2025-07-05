@@ -662,28 +662,24 @@ const Events = () => {
                       className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
                     />
                   </td>
-                  <td className={`
-                    px-4 py-4 whitespace-nowrap font-medium align-middle transition-colors duration-300
+                  <td className="px-4 py-4 text-base font-medium align-middle whitespace-nowrap transition-colors duration-300
                     ${isDarkMode ? 'text-white' : 'text-gray-900'}
-                  `}>
+                  ">
                     {event.event_type}
                   </td>
-                  <td className={`
-                    px-4 py-4 whitespace-nowrap align-middle transition-colors duration-300
-                    ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}
-                  `}>
+                  <td className="px-4 py-4 text-base font-medium align-middle whitespace-nowrap transition-colors duration-300
+                    ${isDarkMode ? 'text-white' : 'text-gray-900'}
+                  ">
                     {event.event_action}
                   </td>
-                  <td className={`
-                    px-4 py-4 whitespace-nowrap align-middle font-mono text-xs transition-colors duration-300
-                    ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}
-                  `}>
+                  <td className="px-4 py-4 text-base font-mono align-middle whitespace-nowrap transition-colors duration-300
+                    ${isDarkMode ? 'text-white' : 'text-gray-900'}
+                  ">
                     {event.agent_id}
                   </td>
-                  <td className={`
-                    px-4 py-4 whitespace-nowrap align-middle font-mono text-xs transition-colors duration-300
-                    ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}
-                  `}>
+                  <td className="px-4 py-4 text-base font-mono align-middle whitespace-nowrap transition-colors duration-300
+                    ${isDarkMode ? 'text-white' : 'text-gray-900'}
+                  ">
                     {event.event_timestamp}
                   </td>
                   <td className="px-4 py-4 align-middle text-center">

@@ -43,6 +43,7 @@ const Threats = () => {
   const [lastUpdated, setLastUpdated] = useState(new Date());
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(50);
+  const [toggleLoading, setToggleLoading] = useState({});
 
   const fetchThreatsData = async () => {
     setLoading(true);
@@ -66,14 +67,21 @@ const Threats = () => {
 
   useEffect(() => { setCurrentPage(1); }, [search, filterType, filterSeverity, filterStatus]);
 
-  const filtered = threats.filter(threat => {
-    const matchesSearch = (threat.threat_name || '').toLowerCase().includes(search.toLowerCase()) ||
-      (threat.threat_value || '').toLowerCase().includes(search.toLowerCase());
-    const matchesType = filterType === 'All' || (threat.threat_type || '').toLowerCase() === filterType.toLowerCase();
-    const matchesSeverity = filterSeverity === 'All' || (threat.severity || '').toLowerCase() === filterSeverity.toLowerCase();
-    const matchesStatus = filterStatus === 'All' || (filterStatus === 'Active' && threat.is_active) || (filterStatus === 'Inactive' && !threat.is_active);
-    return matchesSearch && matchesType && matchesSeverity && matchesStatus;
-  });
+  const filtered = threats
+    .filter(threat => {
+      const matchesSearch = (threat.threat_name || '').toLowerCase().includes(search.toLowerCase()) ||
+        (threat.threat_value || '').toLowerCase().includes(search.toLowerCase());
+      const matchesType = filterType === 'All' || (threat.threat_type || '').toLowerCase() === filterType.toLowerCase();
+      const matchesSeverity = filterSeverity === 'All' || (threat.severity || '').toLowerCase() === filterSeverity.toLowerCase();
+      const matchesStatus = filterStatus === 'All' || (filterStatus === 'Active' && threat.is_active) || (filterStatus === 'Inactive' && !threat.is_active);
+      return matchesSearch && matchesType && matchesSeverity && matchesStatus;
+    })
+    .sort((a, b) => {
+      const aActive = a.is_active === true || a.is_active === 1 || a.is_active === 'true';
+      const bActive = b.is_active === true || b.is_active === 1 || b.is_active === 'true';
+      if (aActive === bActive) return 0;
+      return aActive ? -1 : 1;
+    });
 
   // Calculate stats from filtered threats
   const calculatedStats = {
@@ -633,16 +641,53 @@ const Threats = () => {
                     </td>
                     <td className="px-2 py-2 whitespace-nowrap text-center">{(threat.confidence * 100).toFixed(0)}%</td>
                     <td className="px-2 py-2 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-4 py-1.5 rounded-full text-xs font-bold shadow-md transition-all duration-200 hover:scale-105
-                        ${isDarkMode
-                          ? statusInfo.bg + ' ' + statusInfo.text
-                          : (statusInfo.label === 'Active'
-                              ? 'bg-green-100 text-green-700'
-                              : 'bg-gray-200 text-gray-700')
-                        }
-                      `}>
-                        {statusInfo.label}
-                      </span>
+                      <div className="flex items-center justify-center">
+                        <button
+                          type="button"
+                          disabled={toggleLoading[threat.threat_id || threat.ThreatID]}
+                          onClick={async () => {
+                            if (toggleLoading[threat.threat_id || threat.ThreatID]) return;
+                            const current = threat.is_active === true || threat.is_active === 1 || threat.is_active === 'true';
+                            const action = current ? 'tắt' : 'bật';
+                            if (window.confirm(`Bạn có chắc chắn muốn ${action} trạng thái threat này không?`)) {
+                              setToggleLoading(prev => ({ ...prev, [threat.threat_id || threat.ThreatID]: true }));
+                              try {
+                                await fetch(`/api/v1/threats/${threat.threat_id || threat.ThreatID}/status?is_active=${!current}`, {
+                                  method: 'PUT',
+                                  headers: { 'Content-Type': 'application/json' },
+                                });
+                                fetchThreatsData();
+                              } catch (e) {
+                                // Không cần alert lỗi, chỉ reload lại
+                              } finally {
+                                setToggleLoading(prev => ({ ...prev, [threat.threat_id || threat.ThreatID]: false }));
+                              }
+                            }
+                          }}
+                          className="relative w-12 h-7 focus:outline-none"
+                          aria-label={threat.is_active ? 'Tắt threat' : 'Bật threat'}
+                          title="Bật/tắt trạng thái threat"
+                        >
+                          <span
+                            className={`absolute inset-0 rounded-full transition-colors duration-200
+                              ${(threat.is_active === true || threat.is_active === 1 || threat.is_active === 'true') ? 'bg-green-500' : 'bg-gray-400'}
+                              ${toggleLoading[threat.threat_id || threat.ThreatID] ? 'opacity-60' : ''}`}
+                          ></span>
+                          <span
+                            className={`absolute left-0 top-0 w-7 h-7 bg-[#23253a] rounded-full border-2 border-white shadow-md transform transition-transform duration-200
+                              ${(threat.is_active === true || threat.is_active === 1 || threat.is_active === 'true') ? 'translate-x-5' : 'translate-x-0'}
+                            `}
+                            style={{ zIndex: 2 }}
+                          >
+                            {toggleLoading[threat.threat_id || threat.ThreatID] && (
+                              <svg className="animate-spin h-5 w-5 text-gray-400 mx-auto my-1.5" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                              </svg>
+                            )}
+                          </span>
+                        </button>
+                      </div>
                     </td>
                     <td className="px-2 py-2 whitespace-nowrap">
                       <button

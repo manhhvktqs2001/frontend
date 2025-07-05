@@ -210,7 +210,7 @@ const ThemeToggle = ({ className = "" }) => {
 
 const Header = ({ user = { name: 'Đức Mạnh', role: 'Security Analyst', avatar: null } }) => {
   const { isDarkMode, isTransitioning } = useTheme();
-  const { showAlert, showSuccess } = useToast();
+  const { showAlert, showSuccess, showError, showWarning } = useToast();
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [systemStats, setSystemStats] = useState({
@@ -221,8 +221,12 @@ const Header = ({ user = { name: 'Đức Mạnh', role: 'Security Analyst', avat
     systemStatus: 'Online',
     lastUpdate: new Date()
   });
+  const [lastAlertId, setLastAlertId] = useState(null);
 
-  // Fetch system stats from backend
+  // Thêm biến đếm số cảnh báo chưa đọc
+  const unreadCount = notifications.filter(n => n.unread).length;
+
+  // Fetch system stats and show real-time alerts
   useEffect(() => {
     const fetchHeaderStats = async () => {
       try {
@@ -231,6 +235,7 @@ const Header = ({ user = { name: 'Đức Mạnh', role: 'Security Analyst', avat
           fetchAlerts(),
           fetchAgents()
         ]);
+        
         setSystemStats({
           agentsOnline: agents?.agents?.filter(a => a.status === 'online').length || 0,
           agentsOffline: agents?.agents?.filter(a => a.status !== 'online').length || 0,
@@ -240,61 +245,116 @@ const Header = ({ user = { name: 'Đức Mạnh', role: 'Security Analyst', avat
           lastUpdate: new Date()
         });
         
-        // Show toast cho các alert cảnh báo mới
-        const criticalAlerts = alerts?.alerts?.filter(a =>
-          ['critical', 'high', 'medium', 'low'].includes((a.severity || '').toLowerCase()) &&
-          new Date(a.timestamp || a.alert_timestamp) > new Date(Date.now() - 60000)
-        ) || [];
-        criticalAlerts.forEach(alert => {
-          showAlert(alert);
-        });
+        // Chỉ show toast cho alert mới nhất
+        if (alerts?.alerts?.length > 0) {
+          // Sắp xếp alert theo thời gian/tăng dần alert_id
+          const sortedAlerts = [...alerts.alerts].sort((a, b) => {
+            const aTime = new Date(a.timestamp || a.first_detected || 0).getTime();
+            const bTime = new Date(b.timestamp || b.first_detected || 0).getTime();
+            if (bTime !== aTime) return bTime - aTime;
+            // Nếu trùng timestamp thì so sánh alert_id
+            return (b.alert_id || b.AlertID || 0) - (a.alert_id || a.AlertID || 0);
+          });
+          const newest = sortedAlerts[0];
+          const newestId = newest.alert_id || newest.AlertID;
+          if (lastAlertId !== newestId) {
+            const severity = (newest.severity || '').toLowerCase();
+            // Luôn show toast cho alert mới (không chỉ critical/high)
+            showAlert({
+              severity: newest.severity,
+              title: newest.title || newest.alert_title || 'Security Alert',
+              message: newest.description || `Alert detected on agent ${newest.agent_id}`,
+              agent: newest.agent_id,
+              timestamp: newest.timestamp || newest.first_detected,
+              duration: severity === 'critical' ? 8000 : 6000
+            });
+            // Thêm alert mới vào notifications
+            setNotifications(prev => [
+              {
+                id: newestId,
+                type: severity,
+                title: newest.title || newest.alert_title || 'Security Alert',
+                message: newest.description || `Alert detected on agent ${newest.agent_id}`,
+                time: new Date(newest.timestamp || newest.first_detected).toLocaleString(),
+                unread: true
+              },
+              ...prev.filter(n => n.id !== newestId)
+            ]);
+            setLastAlertId(newestId);
+          }
+        }
+        
+        // Show system status alerts
+        if (agents?.agents) {
+          const offlineAgents = agents.agents.filter(a => a.status === 'offline');
+          if (offlineAgents.length > 0) {
+            // Only show if there are more offline agents than before
+            if (offlineAgents.length > systemStats.agentsOffline) {
+              showWarning(
+                `${offlineAgents.length} agents are now offline`,
+                {
+                  title: 'Agent Status Alert',
+                  duration: 5000
+                }
+              );
+            }
+          }
+        }
+        
       } catch (err) {
-        // fallback: do not update
+        // Show error toast for connection issues
+        showError(
+          'Failed to fetch system data. Please check your connection.',
+          {
+            title: 'Connection Error',
+            duration: 6000
+          }
+        );
       }
     };
-    fetchHeaderStats();
-    const interval = setInterval(fetchHeaderStats, 30000);
-    return () => clearInterval(interval);
-  }, [showAlert]);
 
-  // Mock notifications - replace with real API call
-  useEffect(() => {
-    const mockNotifications = [
-      {
-        id: 1,
-        type: 'critical',
-        title: 'Critical Alert Detected',
-        message: 'Suspicious process detected on Agent-001',
-        time: '2 minutes ago',
-        unread: true
-      },
-      {
-        id: 2,
-        type: 'warning',
-        title: 'Agent Offline',
-        message: 'Agent-005 has been offline for 5 minutes',
-        time: '5 minutes ago',
-        unread: true
-      },
-      {
-        id: 3,
-        type: 'info',
-        title: 'System Update',
-        message: 'New threat intelligence feed updated',
-        time: '10 minutes ago',
-        unread: false
-      },
-      {
-        id: 4,
-        type: 'success',
-        title: 'Threat Blocked',
-        message: 'Malicious file blocked on Agent-003',
-        time: '15 minutes ago',
-        unread: false
-      }
-    ];
-    setNotifications(mockNotifications);
-  }, []);
+    // Initial fetch
+    fetchHeaderStats();
+    
+    // Set up polling interval for real-time updates
+    const interval = setInterval(fetchHeaderStats, 5000); // Check every 5 seconds (tăng tần suất)
+    
+    return () => clearInterval(interval);
+  }, [showAlert, showSuccess, showError, showWarning, lastAlertId, systemStats.agentsOffline]);
+
+  // Test Toast Notifications function (for demo purposes)
+  const testToastNotifications = () => {
+    // Show different types of alerts
+    setTimeout(() => {
+      showAlert({
+        severity: 'critical',
+        title: 'Critical Security Alert',
+        message: 'Malware detected on WIN-SRV-001. Immediate action required.',
+        agent: 'WIN-SRV-001',
+        duration: 8000
+      });
+    }, 500);
+
+    setTimeout(() => {
+      showAlert({
+        severity: 'high',
+        title: 'Suspicious Activity',
+        message: 'Unusual network traffic detected on multiple endpoints.',
+        agent: 'Multiple',
+        duration: 6000
+      });
+    }, 2000);
+
+    setTimeout(() => {
+      showSuccess(
+        'Threat successfully mitigated',
+        {
+          title: 'Security Action',
+          duration: 4000
+        }
+      );
+    }, 4000);
+  };
 
   return (
     <header className={`
@@ -345,16 +405,66 @@ const Header = ({ user = { name: 'Đức Mạnh', role: 'Security Analyst', avat
             className={`
               relative p-2 rounded-lg transition-all duration-200 hover:scale-105
               ${isDarkMode 
-                ? 'text-gray-300 hover:bg-gray-800/50 hover:text-white' 
-                : 'text-gray-600 hover:bg-gray-100/50 hover:text-gray-900'
+                ? `${unreadCount > 0 ? 'bg-red-600/90 text-white' : 'text-gray-300 hover:bg-gray-800/50 hover:text-white'}`
+                : `${unreadCount > 0 ? 'bg-red-500/90 text-white' : 'text-gray-600 hover:bg-gray-100/50 hover:text-gray-900'}`
               }
             `}
+            aria-label="Notifications"
           >
-            <BellIcon className="w-6 h-6" />
-            {notifications.filter(n => n.unread).length > 0 && (
-              <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse" />
+            <BellIcon className="w-7 h-7" />
+            {/* Badge số lượng cảnh báo */}
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs font-bold rounded-full px-1.5 py-0.5 shadow-lg border-2 border-white">
+                {unreadCount}
+              </span>
             )}
           </button>
+
+          {/* Notification Dropdown */}
+          {showNotifications && (
+            <div className={`
+              absolute right-0 mt-2 w-80 rounded-xl shadow-2xl border z-50 max-h-96 overflow-y-auto
+              ${isDarkMode 
+                ? 'bg-gray-900/95 border-gray-700/50' 
+                : 'bg-white/95 border-gray-200/50'
+              }
+              backdrop-blur-xl
+            `}>
+              <div className="p-4 border-b border-gray-700/50">
+                <h3 className="font-semibold">Notifications</h3>
+                <p className="text-xs text-gray-500">
+                  {notifications.filter(n => n.unread).length} unread
+                </p>
+              </div>
+              <div className="max-h-64 overflow-y-auto">
+                {notifications.map(notification => (
+                  <div key={notification.id} className={`
+                    p-3 border-b border-gray-700/30 hover:bg-gray-800/30 transition-colors
+                    ${notification.unread ? 'bg-blue-900/20' : ''}
+                  `}>
+                    <div className="flex items-start space-x-3">
+                      <div className={`
+                        p-1 rounded-full mt-1
+                        ${notification.type === 'critical' ? 'bg-red-600' :
+                          notification.type === 'warning' ? 'bg-orange-600' :
+                          notification.type === 'success' ? 'bg-green-600' : 'bg-blue-600'}
+                      `}>
+                        {notification.type === 'critical' ? <FireIcon className="w-3 h-3 text-white" /> :
+                         notification.type === 'warning' ? <ExclamationTriangleIcon className="w-3 h-3 text-white" /> :
+                         notification.type === 'success' ? <CheckCircleIcon className="w-3 h-3 text-white" /> :
+                         <InformationCircleIcon className="w-3 h-3 text-white" />}
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-medium text-sm">{notification.title}</h4>
+                        <p className="text-xs text-gray-400 mt-1">{notification.message}</p>
+                        <p className="text-xs text-gray-500 mt-1">{notification.time}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Theme status indicator */}
@@ -375,6 +485,7 @@ const Header = ({ user = { name: 'Đức Mạnh', role: 'Security Analyst', avat
             <span>Switching theme...</span>
           </div>
         )}
+
         {/* Theme Toggle */}
         <div className="flex items-center space-x-2">
           <span className={`
